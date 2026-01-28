@@ -19,9 +19,7 @@ export const PRICING_TIERS = [
 ];
 
 /** 
- * NOTA PARA MARÍA: 
- * Puedes usar archivos .png, .jpg o .jpeg. 
- * Solo asegúrate de cambiar la extensión aquí abajo para que coincida con tu archivo real.
+ * MARIA: He actualizado esto para que coincida con tus archivos .jpg
  */
 export const PRODUCTS = [
   { 
@@ -30,7 +28,7 @@ export const PRODUCTS = [
     basePrice: 6.00, 
     category: 'Snack', 
     icon: '🐟', 
-    image: './assets/products/salmon.jpg', // Ejemplo en JPG
+    image: './assets/products/salmon.jpg', 
     description: 'Salmón del Atlántico deshidratado a baja temperatura para preservar Omega-3 y sabor intenso.'
   },
   { 
@@ -39,7 +37,7 @@ export const PRODUCTS = [
     basePrice: 5.50, 
     category: 'Snack', 
     icon: '🍖', 
-    image: './assets/products/lamb.png', // Ejemplo en PNG
+    image: './assets/products/lamb.jpg', 
     description: 'Tendones de cordero británico, ideales para la salud dental y una masticación prolongada y segura.'
   },
   { 
@@ -57,7 +55,7 @@ export const PRODUCTS = [
     basePrice: 5.00, 
     category: 'Snack', 
     icon: '🍗', 
-    image: './assets/products/chicken.png', 
+    image: './assets/products/chicken.jpg', 
     description: 'Pechuga de pollo de corral deshidratada, el snack clásico para un entrenamiento saludable.'
   },
   { 
@@ -75,16 +73,16 @@ export const PRODUCTS = [
     basePrice: 4.50, 
     category: 'Snack', 
     icon: '🥦', 
-    image: './assets/products/veggie.png', 
+    image: './assets/products/veggie.jpg', 
     description: 'Mezcla premium de verduras deshidratadas y hierbas digestivas para una salud intestinal óptima.'
   },
 ];
 
 export const SERVICES = [
   { id: 's1', name: 'Dog Walking', price: 15, category: 'Service', icon: '🌳', image: './assets/services/walking.jpg' },
-  { id: 's2', name: 'Home Sitting', price: 45, category: 'Service', icon: '🏠', image: './assets/services/sitting.png' },
+  { id: 's2', name: 'Home Sitting', price: 45, category: 'Service', icon: '🏠', image: './assets/services/sitting.jpg' },
   { id: 's3', name: 'Grooming', price: 35, category: 'Service', icon: '✂️', image: './assets/services/grooming.jpg' },
-  { id: 's4', name: 'Pop-in Visit', price: 12, category: 'Service', icon: '🚪', image: './assets/services/popin.png' },
+  { id: 's4', name: 'Pop-in Visit', price: 12, category: 'Service', icon: '🚪', image: './assets/services/pop-in.jpg' },
   { id: 's5', name: 'Dog Boarding', price: 35, category: 'Service', icon: '🌙', image: './assets/services/boarding.jpg' },
 ];
 

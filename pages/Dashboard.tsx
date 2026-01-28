@@ -298,13 +298,17 @@ const Dashboard: React.FC = () => {
                 <div key={idx} className="flex flex-col md:flex-row items-center gap-12 p-8 bg-white rounded-[3.5rem] border border-slate-100 hover:border-slate-300 hover:shadow-2xl transition-all group relative overflow-hidden">
                   <div className={`absolute top-0 right-0 w-64 h-64 opacity-[0.02] pointer-events-none transition-all duration-700 group-hover:scale-125 group-hover:opacity-[0.06] ${isService ? 'bg-pink-500' : 'bg-teal-500'} blur-[100px] rounded-full`} />
 
-                  <div className="w-32 h-32 rounded-[2.5rem] bg-slate-50 overflow-hidden border border-slate-100 shrink-0 relative flex items-center justify-center shadow-inner group-hover:shadow-md transition-all">
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { (e.target as any).style.display = 'none'; }} />
-                    ) : (
-                      <span className="text-5xl">{item.icon}</span>
-                    )}
-                    <div className="absolute -top-1 -left-1 w-10 h-10 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-black text-xs shadow-xl ring-4 ring-white">
+                  {/* FIXED: Added overflow-visible to the parent and moved the badge to be correctly visible */}
+                  <div className="w-32 h-32 relative shrink-0">
+                    <div className="w-full h-full rounded-[2.5rem] bg-slate-50 overflow-hidden border border-slate-100 flex items-center justify-center shadow-inner group-hover:shadow-md transition-all">
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { (e.target as any).style.display = 'none'; }} />
+                      ) : (
+                        <span className="text-5xl">{item.icon}</span>
+                      )}
+                    </div>
+                    {/* Badge moved here to avoid being cut by overflow-hidden */}
+                    <div className="absolute -top-2 -left-2 w-10 h-10 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-black text-xs shadow-xl ring-4 ring-white z-10">
                       {idx + 1}
                     </div>
                   </div>

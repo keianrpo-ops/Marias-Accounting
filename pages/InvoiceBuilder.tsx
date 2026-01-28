@@ -138,6 +138,7 @@ const InvoiceBuilder: React.FC = () => {
       unitPrice: price, 
       total: price 
     }]);
+    setError(null);
   };
 
   const handleSave = (status: InvoiceStatus = InvoiceStatus.PAID) => {
@@ -145,6 +146,12 @@ const InvoiceBuilder: React.FC = () => {
       setError(t('assign_client_first'));
       return;
     }
+    
+    if (totals.total <= 0) {
+      setError("No se puede generar una factura con importe cero. Añade productos o servicios.");
+      return;
+    }
+
     const newInvoice: Invoice = {
       id: editId || Math.random().toString(36).substr(2, 9),
       invoiceNumber: clientInfo.invoiceNumber,
@@ -170,7 +177,6 @@ const InvoiceBuilder: React.FC = () => {
     window.dispatchEvent(new Event('storage'));
   };
 
-  // MARÍA: Este es tu link de pago personalizado que llevará la referencia de la factura
   const stripePaymentLink = `https://buy.stripe.com/test_cNieVfdwubiOgWJeJTgMw01?client_reference_id=${clientInfo.invoiceNumber}`;
 
   const PrintableContent = () => (
@@ -331,7 +337,6 @@ const InvoiceBuilder: React.FC = () => {
                         </a>
                      </div>
                      <div className="w-32 h-32 bg-white rounded-2xl flex items-center justify-center p-2 border border-slate-100 group relative shadow-md z-10">
-                        {/* MARÍA: Este código QR ahora lleva la información dinámica de tu pago de Stripe */}
                         <img 
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(stripePaymentLink)}`} 
                           alt="Stripe Payment QR" 
@@ -369,7 +374,16 @@ const InvoiceBuilder: React.FC = () => {
                 <button onClick={() => setClientType('retail')} className={`flex-1 md:flex-none px-8 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${clientType === 'retail' ? 'bg-[#FF6B9D] text-white shadow-xl' : 'text-slate-400'}`}>RETAIL</button>
                 <button onClick={() => setClientType('wholesale')} className={`flex-1 md:flex-none px-8 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${clientType === 'wholesale' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400'}`}>WHOLESALE</button>
              </div>
-            <button onClick={() => setShowStripeModal(true)} className="flex-1 md:flex-none bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-3">
+            <button 
+              onClick={() => {
+                if (totals.total <= 0) {
+                  setError("Añade productos antes de procesar el pago.");
+                  return;
+                }
+                setShowStripeModal(true);
+              }} 
+              className="flex-1 md:flex-none bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-3"
+            >
               <CreditCard size={18} /> STRIPE CARD
             </button>
             <button onClick={() => handleSave()} className="flex-1 md:flex-none bg-[#20B2AA] text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-3">
