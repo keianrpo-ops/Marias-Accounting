@@ -16,7 +16,9 @@
     "lucide-react": "^0.468.0",
     "recharts": "^2.15.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.3.0"
+    "tailwind-merge": "^2.3.0",
+    "@stripe/stripe-js": "^5.6.0",
+    "@stripe/react-stripe-js": "^3.1.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
