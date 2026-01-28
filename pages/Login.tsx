@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Dog, Lock, Mail, ArrowRight, ShieldCheck, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { UserRole } from '../types';
 
 interface LoginProps {
-  onLogin: (role: string) => void;
+  onLogin: (role: UserRole) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -22,10 +23,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     
     setTimeout(() => {
-      // Admin: admin / 1234
-      // Distributor: distribuidor / 1234
-      if (password === '1234' && (user === 'admin' || user === 'distribuidor' || user === 'distributor')) {
-        onLogin(user === 'distributor' ? 'distributor' : user);
+      // Credenciales simples para demo
+      if (password === '1234' && (user.toLowerCase() === 'admin' || user.toLowerCase() === 'distribuidor' || user.toLowerCase() === 'distributor')) {
+        const finalRole = (user.toLowerCase() === 'distribuidor' || user.toLowerCase() === 'distributor') ? UserRole.DISTRIBUTOR : UserRole.ADMIN;
+        onLogin(finalRole);
         navigate('/');
       } else {
         setError('Invalid credentials for this portal');
@@ -106,10 +107,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <ShieldCheck size={14} /> MDC Encrypted System
           </div>
         </div>
-        
-        <p className="text-center text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-12 opacity-50">
-          UK Compliance System • v4.0 Wholesale Edition
-        </p>
       </div>
     </div>
   );

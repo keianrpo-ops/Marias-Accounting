@@ -48,7 +48,7 @@ const App: React.FC = () => {
           
           {!auth.isAuthenticated ? (
             <>
-              <Route path="/login" element={<Login onLogin={handleLogin} />} />
+              <Route path="/login" element={<Login onLogin={(role: UserRole) => handleLogin(role)} />} />
               <Route path="*" element={<Navigate to="/info" replace />} />
             </>
           ) : (
