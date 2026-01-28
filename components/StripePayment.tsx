@@ -5,8 +5,8 @@ import {
   Elements,
   useStripe,
   useElements,
-} from '@stripe/react-stripe-js';
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+} from 'https://esm.sh/@stripe/react-stripe-js@^5.5.0';
+import { loadStripe, Stripe } from 'https://esm.sh/@stripe/stripe-js@^8.6.4';
 import { Lock, ShieldCheck, AlertCircle, X } from 'lucide-react';
 
 interface StripePaymentProps {
@@ -53,7 +53,7 @@ const CheckoutForm: React.FC<StripePaymentProps> = ({ amount, clientName, onSucc
   };
 
   return (
-    <div className="bg-white rounded-[3.5rem] p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-slate-100 max-w-lg w-full animate-in zoom-in-95 duration-300 relative z-[1000] ring-1 ring-slate-100 pointer-events-auto">
+    <div className="bg-white rounded-[3.5rem] p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-slate-100 max-w-lg w-full animate-in zoom-in-95 duration-300 relative z-[1000] ring-1 ring-slate-100 pointer-events-auto text-slate-900">
       <div className="flex justify-between items-start mb-8">
         <div>
           <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Secure <span className="text-[#20B2AA]">Payment</span></h3>
@@ -100,6 +100,7 @@ const CheckoutForm: React.FC<StripePaymentProps> = ({ amount, clientName, onSucc
 
         <button 
           disabled={isProcessing || !stripe}
+          type="submit"
           className="w-full bg-slate-900 text-white py-6 rounded-full font-black uppercase text-[12px] tracking-widest shadow-2xl hover:bg-[#20B2AA] transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3"
         >
           {isProcessing ? (
@@ -137,7 +138,7 @@ const StripePayment: React.FC<StripePaymentProps> = (props) => {
 
   if (!stripePromise) {
     return (
-      <div className="bg-white p-10 rounded-[2rem] shadow-2xl border border-rose-100 text-center max-w-md pointer-events-auto">
+      <div className="bg-white p-10 rounded-[2rem] shadow-2xl border border-rose-100 text-center max-w-md pointer-events-auto text-slate-900">
         <AlertCircle size={40} className="mx-auto text-rose-500 mb-4"/>
         <h3 className="text-xl font-black text-slate-900 uppercase">Configuración Incompleta</h3>
         <p className="text-sm text-slate-500 mt-2">Por favor, introduce tu <strong>Stripe Public Key</strong> en el menú de Ajustes para activar los pagos con tarjeta.</p>
