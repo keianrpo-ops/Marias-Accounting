@@ -186,7 +186,6 @@ const Clients: React.FC = () => {
                     </button>
                  </div>
 
-                 {/* Sections... Identity, Location, Dossier (Redacted for space, assuming same professional UI) */}
                  <div className="space-y-10">
                     <SectionTitle icon={User} title="Identity & Contacts" />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -230,8 +229,8 @@ const Clients: React.FC = () => {
                            </div>
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-slate-200">
                               <div className="space-y-4">
-                                 <Checkbox label="Vaccinations Verified" checked={pet.isVaccinated} onChange={v => setPets(pets.map(p => p.id === pet.id ? {...p, isVaccinated: v} : p))} />
-                                 <Checkbox label="Spayed / Neutered" checked={pet.isNeutered} onChange={v => setPets(pets.map(p => p.id === pet.id ? {...p, isNeutered: v} : p))} />
+                                 <Checkbox label="Vaccinations Verified" checked={pet.isVaccinated} onChange={(v: boolean) => setPets(pets.map(p => p.id === pet.id ? {...p, isVaccinated: v} : p))} />
+                                 <Checkbox label="Spayed / Neutered" checked={pet.isNeutered} onChange={(v: boolean) => setPets(pets.map(p => p.id === pet.id ? {...p, isNeutered: v} : p))} />
                               </div>
                               <select className="w-full px-8 py-5 bg-white rounded-[2rem] border border-slate-200 font-bold outline-none" value={pet.behaviorWithDogs} onChange={e => setPets(pets.map(p => p.id === pet.id ? {...p, behaviorWithDogs: e.target.value} : p))}>
                                  <option value="">Behavior...</option>
@@ -249,7 +248,7 @@ const Clients: React.FC = () => {
         </div>
       )}
 
-      {/* Selected Client Dossier Modal - NEW FEATURE */}
+      {/* Selected Client Dossier Modal */}
       {selectedClient && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-xl">
            <div className="bg-white w-full max-w-5xl rounded-[4rem] shadow-3xl animate-in zoom-in-95 overflow-hidden border border-white flex flex-col max-h-[90vh]">
@@ -296,7 +295,6 @@ const Clients: React.FC = () => {
                             <div className="pt-6 border-t border-slate-200 space-y-4">
                                <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-black text-slate-400 uppercase">Vaccines</span>
-                                  {/* Fixed icons BadgeCheck and AlertTriangle added to imports */}
                                   {pet.isVaccinated ? <BadgeCheck className="text-emerald-500" size={20}/> : <AlertTriangle className="text-rose-500" size={20}/>}
                                </div>
                                <div className="flex items-center justify-between">
@@ -338,14 +336,14 @@ const SectionTitle = ({ icon: Icon, title, dark }: any) => (
   </div>
 );
 
-const InputField = ({ label, value, onChange, type = "text" }: any) => (
+const InputField = ({ label, value, onChange, type = "text" }: { label: string, value: string, onChange: (v: string) => void, type?: string }) => (
   <div className="space-y-2 w-full">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{label}</label>
     <input required type={type} className="w-full px-6 py-5 bg-slate-50 rounded-[2rem] border-none font-bold outline-none focus:bg-white focus:ring-4 focus:ring-teal-50 transition-all shadow-inner" value={value} onChange={e => onChange(e.target.value)} />
   </div>
 );
 
-const Checkbox = ({ label, checked, onChange }: any) => (
+const Checkbox = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (v: boolean) => void }) => (
   <label className="flex items-center gap-4 cursor-pointer group">
      <input type="checkbox" className="w-6 h-6 rounded-lg accent-[#20B2AA]" checked={checked} onChange={e => onChange(e.target.checked)} />
      <span className="text-[12px] font-black uppercase text-slate-700">{label}</span>

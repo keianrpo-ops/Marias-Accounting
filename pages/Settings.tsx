@@ -118,8 +118,8 @@ const Settings: React.FC = () => {
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
                   <SectionHeader title={t('bacs_title')} badge="UK Compliant" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <InputField label={t('beneficiary')} value={settings.accountName} onChange={v => setSettings({...settings, accountName: v})} />
-                    <InputField label="Bank Name" value={settings.bankName} onChange={v => setSettings({...settings, bankName: v})} />
+                    <InputField label={t('beneficiary')} value={settings.accountName} onChange={(v: string) => setSettings({...settings, accountName: v})} />
+                    <InputField label="Bank Name" value={settings.bankName} onChange={(v: string) => setSettings({...settings, bankName: v})} />
                   </div>
                   <div className="bg-slate-900 p-12 rounded-[2.5rem] text-white relative overflow-hidden group border border-white/5">
                     <Landmark className="absolute -right-8 -bottom-8 opacity-5 group-hover:scale-110 transition-transform" size={160} />
@@ -140,10 +140,10 @@ const Settings: React.FC = () => {
                   </div>
                   <SectionHeader title={t('clients')} icon={Mail} />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <InputField label={t('contact_email')} value={settings.email} onChange={v => setSettings({...settings, email: v})} icon={Mail} />
-                    <InputField label="WhatsApp / Phone" value={settings.phone} onChange={v => setSettings({...settings, phone: v})} icon={Phone} />
+                    <InputField label={t('contact_email')} value={settings.email} onChange={(v: string) => setSettings({...settings, email: v})} icon={Mail} />
+                    <InputField label="WhatsApp / Phone" value={settings.phone} onChange={(v: string) => setSettings({...settings, phone: v})} icon={Phone} />
                     <div className="md:col-span-2">
-                       <InputField label="Address" value={settings.address} onChange={v => setSettings({...settings, address: v})} isTextArea />
+                       <InputField label="Address" value={settings.address} onChange={(v: string) => setSettings({...settings, address: v})} isTextArea />
                     </div>
                   </div>
                 </div>
@@ -156,8 +156,8 @@ const Settings: React.FC = () => {
                     <div className="space-y-8 relative z-10">
                        <div><h4 className="text-4xl font-black tracking-tighter">Stripe Ecosystem</h4><p className="text-indigo-100 text-base mt-2 max-w-md font-medium leading-relaxed opacity-80">{t('api_keys_desc')}</p></div>
                        <div className="grid grid-cols-1 gap-6">
-                          <InputField label="Public API Key" value={settings.stripePublicKey} onChange={v => setSettings({...settings, stripePublicKey: v})} placeholder="pk_live_..." dark />
-                          <InputField label="Secret API Key" type="password" value={settings.stripeSecretKey} onChange={v => setSettings({...settings, stripeSecretKey: v})} placeholder="sk_live_..." dark />
+                          <InputField label="Public API Key" value={settings.stripePublicKey} onChange={(v: string) => setSettings({...settings, stripePublicKey: v})} placeholder="pk_live_..." dark />
+                          <InputField label="Secret API Key" type="password" value={settings.stripeSecretKey} onChange={(v: string) => setSettings({...settings, stripeSecretKey: v})} placeholder="sk_live_..." dark />
                        </div>
                        <div className="flex items-center gap-6 pt-4"><a href="https://dashboard.stripe.com/apikeys" target="_blank" className="bg-white text-indigo-600 px-10 py-5 rounded-full font-black uppercase text-[11px] tracking-widest shadow-2xl hover:scale-105 transition-all flex items-center gap-3">Stripe Dashboard <ExternalLink size={16}/></a><div className="flex items-center gap-2 text-[10px] font-black uppercase text-indigo-200"><ShieldCheck size={14}/> TLS 1.3 Encryption</div></div>
                     </div>
@@ -227,9 +227,9 @@ const InputField = ({ label, value, onChange, icon: Icon, isTextArea, type = "te
     <div className="relative group">
       {Icon && <Icon className={`absolute left-6 top-1/2 -translate-y-1/2 ${dark ? 'text-indigo-300' : 'text-slate-300'}`} size={18} />}
       {isTextArea ? (
-        <textarea value={value} onChange={e => onChange?.(e.target.value)} placeholder={placeholder} className={`w-full px-8 py-6 rounded-[2.2rem] text-[13px] font-bold outline-none transition-all resize-none shadow-sm ${dark ? 'bg-indigo-900/50 border-indigo-400/30 text-white placeholder:text-indigo-300/50 focus:ring-4 focus:ring-white/10' : 'bg-slate-50 border-slate-200 focus:ring-4 focus:ring-teal-50'}`} rows={3} />
+        <textarea value={value} onChange={(e: any) => onChange?.(e.target.value)} placeholder={placeholder} className={`w-full px-8 py-6 rounded-[2.2rem] text-[13px] font-bold outline-none transition-all resize-none shadow-sm ${dark ? 'bg-indigo-900/50 border-indigo-400/30 text-white placeholder:text-indigo-300/50 focus:ring-4 focus:ring-white/10' : 'bg-slate-50 border-slate-200 focus:ring-4 focus:ring-teal-50'}`} rows={3} />
       ) : (
-        <input type={type} value={value} placeholder={placeholder} onChange={e => onChange?.(e.target.value)} className={`w-full ${Icon ? 'pl-16' : 'px-8'} py-6 rounded-[2.2rem] text-[13px] font-bold transition-all shadow-sm outline-none ${dark ? 'bg-indigo-900/50 border-indigo-400/30 text-white placeholder:text-indigo-300/50 focus:ring-4 focus:ring-white/10' : 'bg-slate-50 border-slate-200 focus:ring-4 focus:ring-teal-50'}`} />
+        <input type={type} value={value} placeholder={placeholder} onChange={(e: any) => onChange?.(e.target.value)} className={`w-full ${Icon ? 'pl-16' : 'px-8'} py-6 rounded-[2.2rem] text-[13px] font-bold transition-all shadow-sm outline-none ${dark ? 'bg-indigo-900/50 border-indigo-400/30 text-white placeholder:text-indigo-300/50 focus:ring-4 focus:ring-white/10' : 'bg-slate-50 border-slate-200 focus:ring-4 focus:ring-teal-50'}`} />
       )}
     </div>
   </div>

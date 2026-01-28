@@ -91,6 +91,7 @@ export interface Invoice {
   isWholesale?: boolean;
   discountApplied?: number;
   distributorId?: string;
+  paymentMethod?: string;
 }
 
 export interface InventoryItem {
