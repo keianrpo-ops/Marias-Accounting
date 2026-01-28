@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   UserPlus, Search, Phone, Mail, MapPin, X, ShoppingBag, 
   Plus, Trash2, Dog, User, Globe, Stethoscope, Activity, Heart, ShieldCheck,
-  FileText, ArrowRight, Calendar, Info, BadgeCheck, AlertTriangle, Edit, Save
+  FileText, Edit, Save, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { Client, UserRole, PetDetails } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -28,14 +28,14 @@ const Clients: React.FC = () => {
     vetInfo: ''
   });
 
-  const [pets, setPets] = useState<PetDetails[]>([
-    {
-      id: Math.random().toString(36).substr(2, 9),
-      name: '', age: '', breed: '', gender: 'male',
-      isNeutered: false, isVaccinated: true, allergies: '',
-      behaviorWithDogs: '', medicalNotes: ''
-    }
-  ]);
+  const [pets, setPets] = useState<PetDetails[]>([]);
+
+  const defaultPet = (): PetDetails => ({
+    id: Math.random().toString(36).substr(2, 9),
+    name: '', age: '', breed: '', gender: 'male',
+    isNeutered: false, isVaccinated: true, allergies: '',
+    behaviorWithDogs: '', medicalNotes: ''
+  });
 
   useEffect(() => {
     const savedClients = JSON.parse(localStorage.getItem('mdc_clients') || '[]');
@@ -63,7 +63,7 @@ const Clients: React.FC = () => {
   };
 
   const handleDeleteClient = (id: string) => {
-    if (confirm('¿Estás seguro de que deseas eliminar este cliente permanentemente de la base de datos?')) {
+    if (confirm('¿Estás seguro de que deseas eliminar este cliente? Se borrarán todos sus datos de forma permanente.')) {
       const updated = clients.filter(c => c.id !== id);
       setClients(updated);
       localStorage.setItem('mdc_clients', JSON.stringify(updated));
@@ -86,12 +86,7 @@ const Clients: React.FC = () => {
       emergencyContactPhone: client.emergencyContactPhone || '',
       vetInfo: client.vetInfo || ''
     });
-    setPets(client.pets.length > 0 ? client.pets : [{
-      id: Math.random().toString(36).substr(2, 9),
-      name: '', age: '', breed: '', gender: 'male',
-      isNeutered: false, isVaccinated: true, allergies: '',
-      behaviorWithDogs: '', medicalNotes: ''
-    }]);
+    setPets(client.pets?.length > 0 ? client.pets : [defaultPet()]);
     setIsModalOpen(true);
   };
 
@@ -99,22 +94,15 @@ const Clients: React.FC = () => {
     e.preventDefault();
     
     if (editingClient) {
-      // Update existing
       const updatedClients = clients.map(c => 
         c.id === editingClient.id 
-        ? { 
-            ...c, 
-            ...baseData, 
-            role: clientType, 
-            pets: clientType === UserRole.CLIENT ? pets : [] 
-          } as Client
+        ? { ...c, ...baseData, role: clientType, pets: clientType === UserRole.CLIENT ? pets : [] } as Client
         : c
       );
       setClients(updatedClients);
       localStorage.setItem('mdc_clients', JSON.stringify(updatedClients));
     } else {
-      // Add new
-      const client: Client = {
+      const newClient: Client = {
         id: Math.random().toString(36).substr(2, 9),
         status: 'approved',
         invoicesSent: 0,
@@ -124,7 +112,7 @@ const Clients: React.FC = () => {
         pets: clientType === UserRole.CLIENT ? pets : []
       } as Client;
 
-      const updated = [...clients, client];
+      const updated = [...clients, newClient];
       setClients(updated);
       localStorage.setItem('mdc_clients', JSON.stringify(updated));
     }
@@ -140,12 +128,7 @@ const Clients: React.FC = () => {
       businessName: '', businessType: 'Retail Store', emergencyContactName: '', 
       emergencyContactPhone: '', vetInfo: '' 
     });
-    setPets([{ 
-      id: Math.random().toString(36).substr(2, 9), 
-      name: '', age: '', breed: '', gender: 'male', 
-      isNeutered: false, isVaccinated: true, allergies: '', 
-      behaviorWithDogs: '', medicalNotes: '' 
-    }]);
+    setPets([defaultPet()]);
   };
 
   const startSale = (client: Client) => {
@@ -166,7 +149,7 @@ const Clients: React.FC = () => {
       <header className="flex flex-col md:flex-row justify-between items-center gap-6">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">CRM <span className="text-[#20B2AA]">Audit</span></h2>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-2">Managing {clients.length} Approved & {pendingRequests.length} Pending</p>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-2">Gestión de {clients.length} Aprobados & {pendingRequests.length} en Cola</p>
         </div>
         <div className="flex gap-4">
            <div className="bg-white p-1.5 rounded-full border border-slate-200 flex shadow-sm">
@@ -184,7 +167,7 @@ const Clients: React.FC = () => {
 
       <div className="bg-white p-3 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center px-8 focus-within:ring-4 focus-within:ring-teal-50 transition-all">
         <Search className="text-slate-300" size={18} />
-        <input className="flex-1 p-4 bg-transparent outline-none text-xs font-bold uppercase tracking-widest" placeholder="Search by name, business or dossier content..." value={search} onChange={e => setSearch(e.target.value)} />
+        <input className="flex-1 p-4 bg-transparent outline-none text-xs font-bold uppercase tracking-widest" placeholder="Buscar por nombre, negocio o contenido..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -198,13 +181,13 @@ const Clients: React.FC = () => {
                 <div className="flex gap-2">
                   {activeTab === 'approved' && (
                     <>
-                      <button onClick={() => openEditModal(client)} className="p-3 bg-slate-50 text-slate-400 hover:text-[#20B2AA] hover:bg-teal-50 rounded-xl transition-all" title="Edit Client">
+                      <button onClick={() => openEditModal(client)} className="p-3 bg-slate-50 text-slate-400 hover:text-[#20B2AA] hover:bg-teal-50 rounded-xl transition-all" title="Editar">
                         <Edit size={18} />
                       </button>
-                      <button onClick={() => handleDeleteClient(client.id)} className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all" title="Delete Client">
+                      <button onClick={() => handleDeleteClient(client.id)} className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all" title="Borrar">
                         <Trash2 size={18} />
                       </button>
-                      <button onClick={() => startSale(client)} className="p-3 bg-slate-900 text-[#C6FF00] rounded-xl shadow-xl hover:scale-110 transition-transform group/sale relative">
+                      <button onClick={() => startSale(client)} className="p-3 bg-slate-900 text-[#C6FF00] rounded-xl shadow-xl hover:scale-110 transition-transform">
                         <ShoppingBag size={18} />
                       </button>
                     </>
@@ -236,20 +219,18 @@ const Clients: React.FC = () => {
         ))}
       </div>
 
-      {/* Registration/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
            <div className="bg-white w-full max-w-4xl rounded-[4rem] p-12 shadow-3xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto no-scrollbar border border-white">
               <div className="flex justify-between items-start mb-10">
                  <div>
                     <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">{editingClient ? 'Edit' : 'Manual'} <span className="text-[#20B2AA]">{editingClient ? 'Record' : 'Registration'}</span></h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 italic">Official Admin Dossier Creation v5.0</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 italic">MDC Admin Control v6.0</p>
                  </div>
                  <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
               </div>
 
               <form onSubmit={handleSubmitClient} className="space-y-16">
-                 {/* Role Switcher */}
                  <div className="bg-slate-50 p-3 rounded-full flex shadow-inner border border-slate-100 max-w-md mx-auto">
                     <button type="button" onClick={() => setClientType(UserRole.DISTRIBUTOR)} className={`flex-1 py-4 rounded-full text-[12px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${clientType === UserRole.DISTRIBUTOR ? 'bg-slate-900 text-white shadow-2xl' : 'text-slate-400'}`}>
                       <ShoppingBag size={18}/> Wholesale
@@ -262,38 +243,48 @@ const Clients: React.FC = () => {
                  <div className="space-y-10">
                     <SectionTitle icon={User} title="Identity & Contacts" />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <InputField label="Full Contact Name" value={baseData.name} onChange={(v: string) => setBaseData({...baseData, name: v})} />
-                        <InputField label="Email Address" type="email" value={baseData.email} onChange={(v: string) => setBaseData({...baseData, email: v})} />
-                        <InputField label="Primary Phone" value={baseData.phone} onChange={(v: string) => setBaseData({...baseData, phone: v})} />
+                        <InputField label="Nombre Completo" value={baseData.name} onChange={(v) => setBaseData({...baseData, name: v})} />
+                        <InputField label="Email" type="email" value={baseData.email} onChange={(v) => setBaseData({...baseData, email: v})} />
+                        <InputField label="Teléfono" value={baseData.phone} onChange={(v) => setBaseData({...baseData, phone: v})} />
                     </div>
+                    {clientType === UserRole.DISTRIBUTOR && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <InputField label="Nombre del Negocio" value={baseData.businessName} onChange={(v) => setBaseData({...baseData, businessName: v})} />
+                        <InputField label="Tipo de Negocio" value={baseData.businessType} onChange={(v) => setBaseData({...baseData, businessType: v})} />
+                      </div>
+                    )}
                  </div>
 
                  <div className="space-y-10">
                     <SectionTitle icon={Globe} title="Location Details" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="md:col-span-2"><InputField label="Address Line 1" value={baseData.addressLine1} onChange={(v: string) => setBaseData({...baseData, addressLine1: v})} /></div>
-                       <InputField label="City" value={baseData.city} onChange={(v: string) => setBaseData({...baseData, city: v})} />
-                       <InputField label="Postcode" value={baseData.postcode} onChange={(v: string) => setBaseData({...baseData, postcode: v})} />
+                       <div className="md:col-span-2"><InputField label="Dirección" value={baseData.addressLine1} onChange={(v) => setBaseData({...baseData, addressLine1: v})} /></div>
+                       <InputField label="Ciudad" value={baseData.city} onChange={(v) => setBaseData({...baseData, city: v})} />
+                       <InputField label="Postcode" value={baseData.postcode} onChange={(v) => setBaseData({...baseData, postcode: v})} />
                     </div>
                  </div>
 
                  {clientType === UserRole.CLIENT && (
                    <div className="space-y-12">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-6">
-                        <SectionTitle icon={Dog} title="Pet Professional Dossier" />
-                        <button type="button" onClick={() => pets.length < 2 && setPets([...pets, { id: Math.random().toString(36).substr(2, 9), name: '', age: '', breed: '', gender: 'male', isNeutered: false, isVaccinated: true, allergies: '', behaviorWithDogs: '', medicalNotes: '' }])} className="bg-[#FF6B9D] text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-xl flex items-center gap-2">
+                        <SectionTitle icon={Dog} title="Pet Dossier" />
+                        <button type="button" onClick={() => setPets([...pets, defaultPet()])} className="bg-[#FF6B9D] text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-xl flex items-center gap-2">
                            <Plus size={18}/> Add Pet
                         </button>
                       </div>
-                      {pets.map((pet, idx) => (
+                      {pets.map((pet) => (
                         <div key={pet.id} className="p-10 bg-slate-50/50 rounded-[3.5rem] border border-slate-200 space-y-10 relative">
-                           {pets.length > 1 && <button type="button" onClick={() => setPets(pets.filter(p => p.id !== pet.id))} className="absolute top-8 right-8 text-rose-500"><Trash2 size={20}/></button>}
+                           {pets.length > 1 && (
+                             <button type="button" onClick={() => setPets(pets.filter(p => p.id !== pet.id))} className="absolute top-8 right-8 text-rose-500">
+                               <Trash2 size={20}/>
+                             </button>
+                           )}
                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                              <InputField label="Pet Name" value={pet.name} onChange={(v: string) => setPets(pets.map(p => p.id === pet.id ? {...p, name: v} : p))} />
-                              <InputField label="Age" value={pet.age} onChange={(v: string) => setPets(pets.map(p => p.id === pet.id ? {...p, age: v} : p))} />
-                              <InputField label="Breed" value={pet.breed} onChange={(v: string) => setPets(pets.map(p => p.id === pet.id ? {...p, breed: v} : p))} />
+                              <InputField label="Mascota" value={pet.name} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, name: v} : p))} />
+                              <InputField label="Edad" value={pet.age} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, age: v} : p))} />
+                              <InputField label="Raza" value={pet.breed} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, breed: v} : p))} />
                               <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Gender</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Género</label>
                                 <div className="bg-white p-2 rounded-full flex shadow-sm border border-slate-100">
                                    <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, gender: 'male' as const} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.gender === 'male' ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>Male</button>
                                    <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, gender: 'female' as const} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.gender === 'female' ? 'bg-[#FF6B9D] text-white' : 'text-slate-400'}`}>Female</button>
@@ -306,17 +297,16 @@ const Clients: React.FC = () => {
                  )}
 
                  <button className="w-full bg-slate-900 text-white py-7 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[12px] shadow-3xl hover:bg-[#20B2AA] transition-all flex items-center justify-center gap-4">
-                    <Save size={20} /> {editingClient ? 'Update Approved Record' : 'Submit Approved Record'}
+                    <Save size={20} /> {editingClient ? 'Actualizar Registro' : 'Guardar Cliente'}
                  </button>
               </form>
            </div>
         </div>
       )}
 
-      {/* Selected Client Dossier Modal */}
       {selectedClient && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-xl">
-           <div className="bg-white w-full max-w-5xl rounded-[4rem] shadow-3xl animate-in zoom-in-95 overflow-hidden border border-white flex flex-col max-h-[90vh]">
+           <div className="bg-white w-full max-w-5xl rounded-[4rem] shadow-3xl overflow-hidden border border-white flex flex-col max-h-[90vh]">
               <div className="bg-slate-900 p-12 flex justify-between items-center text-white shrink-0">
                  <div className="flex items-center gap-8">
                     <div className="w-24 h-24 bg-[#20B2AA] rounded-[2.5rem] flex items-center justify-center shadow-2xl">
@@ -332,52 +322,26 @@ const Clients: React.FC = () => {
 
               <div className="p-12 overflow-y-auto no-scrollbar grid grid-cols-1 lg:grid-cols-3 gap-12">
                  <div className="space-y-10 lg:border-r lg:border-slate-100 lg:pr-12">
-                    <SectionTitle icon={Globe} title="Location & Contact" dark />
+                    <SectionTitle icon={Globe} title="Contact" dark />
                     <div className="space-y-6">
-                       <InfoItem label="Email" value={selectedClient.email} icon={Mail} />
-                       <InfoItem label="Phone" value={selectedClient.phone} icon={Phone} />
-                       <InfoItem label="Address" value={`${selectedClient.addressLine1}, ${selectedClient.city}`} icon={MapPin} />
-                       <InfoItem label="Postcode" value={selectedClient.postcode} icon={ShieldCheck} />
+                       <p className="text-sm font-bold text-slate-900 break-all">{selectedClient.email}</p>
+                       <p className="text-sm font-bold text-slate-900">{selectedClient.phone}</p>
+                       <p className="text-sm font-bold text-slate-900">{selectedClient.addressLine1}, {selectedClient.city}</p>
                     </div>
-                    <button onClick={() => startSale(selectedClient)} className="w-full bg-[#20B2AA] text-white py-6 rounded-3xl font-black uppercase text-[11px] tracking-widest shadow-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all">
-                       <ShoppingBag size={20}/> New Sale Record
+                    <button onClick={() => { setSelectedClient(null); openEditModal(selectedClient); }} className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase text-[11px] tracking-widest shadow-2xl flex items-center justify-center gap-3">
+                       <Edit size={20}/> Editar Dossier
                     </button>
                  </div>
 
                  <div className="lg:col-span-2 space-y-10">
-                    <SectionTitle icon={Dog} title="Pet Assets & Medical Dossier" dark />
+                    <SectionTitle icon={Dog} title="Pets" dark />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       {selectedClient.pets && selectedClient.pets.length > 0 ? selectedClient.pets.map(pet => (
-                         <div key={pet.id} className="bg-slate-50 p-10 rounded-[3.5rem] border border-slate-100 space-y-8">
-                            <div className="flex justify-between items-center">
-                               <h5 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">{pet.name}</h5>
-                               <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${pet.gender === 'male' ? 'bg-blue-50 text-blue-600' : 'bg-pink-50 text-pink-600'}`}>{pet.gender}</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-6">
-                               <DossierBadge label="Breed" value={pet.breed} />
-                               <DossierBadge label="Age" value={pet.age} />
-                            </div>
-                            <div className="pt-6 border-t border-slate-200 space-y-4">
-                               <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black text-slate-400 uppercase">Vaccines</span>
-                                  {pet.isVaccinated ? <BadgeCheck className="text-emerald-500" size={20}/> : <AlertTriangle className="text-rose-500" size={20}/>}
-                               </div>
-                               <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black text-slate-400 uppercase">Neutered/Spayed</span>
-                                  <span className="text-[10px] font-black">{pet.isNeutered ? 'YES ✅' : 'NO ⚠️'}</span>
-                               </div>
-                            </div>
-                            <div className="p-4 bg-white rounded-2xl border border-slate-100">
-                               <p className="text-[9px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><Activity size={12}/> Behavior</p>
-                               <p className="text-xs font-bold text-slate-600">"{pet.behaviorWithDogs || 'No notes'}"</p>
-                            </div>
+                       {selectedClient.pets?.map(pet => (
+                         <div key={pet.id} className="bg-slate-50 p-8 rounded-[3.5rem] border border-slate-100 space-y-4">
+                            <h5 className="text-2xl font-black text-slate-900 uppercase">{pet.name}</h5>
+                            <p className="text-xs font-bold text-slate-400 uppercase">{pet.breed} • {pet.age}</p>
                          </div>
-                       )) : (
-                         <div className="col-span-2 py-20 bg-slate-50 rounded-[3rem] text-center border-2 border-dashed border-slate-200">
-                            <ShoppingBag className="mx-auto text-slate-200 mb-4" size={48} />
-                            <p className="font-black text-slate-300 uppercase tracking-widest text-xs">No Pet Data Registered for B2B Partner</p>
-                         </div>
-                       )}
+                       ))}
                     </div>
                  </div>
               </div>
@@ -388,10 +352,10 @@ const Clients: React.FC = () => {
   );
 };
 
-const SectionTitle = ({ icon: Icon, title, dark }: any) => (
-  <div className={`flex items-center gap-4 border-b pb-6 ${dark ? 'border-slate-100' : 'border-slate-100'}`}>
+const SectionTitle = ({ icon: Icon, title }: any) => (
+  <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
      <Icon size={22} className="text-[#20B2AA]" />
-     <h4 className={`text-2xl font-black uppercase tracking-tight ${dark ? 'text-slate-900' : 'text-slate-900'}`}>{title}</h4>
+     <h4 className="text-2xl font-black uppercase tracking-tight text-slate-900">{title}</h4>
   </div>
 );
 
@@ -399,23 +363,6 @@ const InputField = ({ label, value, onChange, type = "text" }: { label: string, 
   <div className="space-y-2 w-full">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{label}</label>
     <input required type={type} className="w-full px-6 py-5 bg-slate-50 rounded-[2rem] border-none font-bold outline-none focus:bg-white focus:ring-4 focus:ring-teal-50 transition-all shadow-inner" value={value} onChange={e => onChange(e.target.value)} />
-  </div>
-);
-
-const InfoItem = ({ label, value, icon: Icon }: any) => (
-  <div className="flex items-start gap-4">
-     <div className="p-3 bg-slate-50 rounded-xl text-slate-400"><Icon size={18}/></div>
-     <div>
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-        <p className="text-sm font-bold text-slate-900">{value}</p>
-     </div>
-  </div>
-);
-
-const DossierBadge = ({ label, value }: any) => (
-  <div className="text-center p-4 bg-white rounded-2xl shadow-sm border border-slate-100">
-     <p className="text-[8px] font-black text-slate-400 uppercase mb-1">{label}</p>
-     <p className="text-sm font-black text-slate-900">{value || 'N/A'}</p>
   </div>
 );
 
