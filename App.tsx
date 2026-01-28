@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -51,8 +52,7 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/info" replace />} />
             </>
           ) : (
-            <Route element={<Layout role={auth.role || UserRole.DISTRIBUTOR} onLogout={handleLogout}>
-              <Routes>
+            <Route element={<Layout role={auth.role || UserRole.DISTRIBUTOR} onLogout={handleLogout} />}>
                 {auth.role === UserRole.ADMIN ? (
                   <>
                     <Route path="/" element={<Dashboard />} />
@@ -80,9 +80,6 @@ const App: React.FC = () => {
                   </>
                 )}
                 <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Route>}>
-              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           )}
         </Routes>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, TrendingUp, Scale, Star, Activity, ShieldCheck, DollarSign, BarChart3, ChevronRight } from 'lucide-react';

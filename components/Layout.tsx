@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -16,14 +17,14 @@ import {
 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import { useLanguage } from '../context/LanguageContext';
+import { UserRole } from '../types';
 
 interface LayoutProps {
-  children: React.ReactNode;
   onLogout: () => void;
-  role: string;
+  role: UserRole;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, onLogout, role }) => {
+const Layout: React.FC<LayoutProps> = ({ onLogout, role }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
@@ -46,7 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, role }) => {
     { name: 'Pedidos', icon: FileText, path: '/orders' },
   ];
 
-  const menuItems = role === 'admin' ? adminMenu : distributorMenu;
+  const menuItems = role === UserRole.ADMIN ? adminMenu : distributorMenu;
 
   return (
     <div className="flex h-screen overflow-hidden no-print flex-col md:flex-row font-sans bg-[#F1F1E6]">
@@ -76,11 +77,11 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, role }) => {
                 }`}
               >
                 {isActive && (
-                  <div className="absolute left-0 w-1.5 h-10 bg-[#20B2AA] rounded-r-full shadow-[4px_0_15px_rgba(32,178,170,0.5)] animate-in slide-in-from-left-4 duration-500" />
+                  <div className="absolute left-0 w-1.5 h-10 bg-[#20B2AA] rounded-r-full shadow-[4px_0_15px_rgba(32,178,170,0.5)]" />
                 )}
                 
                 <Icon size={20} className={`transition-all duration-500 ${isActive ? 'text-[#20B2AA] scale-125 rotate-3' : 'text-slate-400 group-hover:text-slate-900'}`} />
-                <span className={`text-[11px] uppercase tracking-[0.2em] transition-all ${isActive ? 'translate-x-1' : ''}`}>{item.name}</span>
+                <span className={`text-[11px] uppercase tracking-[0.2em] ${isActive ? 'translate-x-1' : ''}`}>{item.name}</span>
               </Link>
             );
           })}
@@ -110,7 +111,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout, role }) => {
           </div>
           <NotificationCenter role={role} />
         </header>
-        {children}
+        <Outlet />
       </main>
     </div>
   );
