@@ -1,17 +1,13 @@
 
-import React, { useState } from 'react';
-// Importamos directamente desde CDN para evitar errores de resolución local en Vite
-import { loadStripe } from 'https://esm.sh/@stripe/stripe-js@5.6.0';
+import React, { useState, useEffect } from 'react';
 import {
   CardElement,
   Elements,
   useStripe,
   useElements,
-} from 'https://esm.sh/@stripe/react-stripe-js@3.1.1?external=react,react-dom';
-import { Lock, ShieldCheck, AlertCircle } from 'lucide-react';
-
-// REMPLAZA ESTA KEY con tu "Publishable key" de Stripe Dashboard
-const stripePromise = loadStripe('pk_test_51PqXXXXXYourRealKeyHereXXXXX');
+} from '@stripe/react-stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { Lock, ShieldCheck, AlertCircle, X } from 'lucide-react';
 
 interface StripePaymentProps {
   amount: number;
@@ -34,7 +30,10 @@ const CheckoutForm: React.FC<StripePaymentProps> = ({ amount, clientName, onSucc
     setError(null);
 
     const cardElement = elements.getElement(CardElement);
-    if (!cardElement) return;
+    if (!cardElement) {
+      setIsProcessing(false);
+      return;
+    }
 
     const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
       type: 'card',
@@ -43,101 +42,110 @@ const CheckoutForm: React.FC<StripePaymentProps> = ({ amount, clientName, onSucc
     });
 
     if (stripeError) {
-      setError(stripeError.message || "Error al procesar la tarjeta.");
+      setError(stripeError.message || "Error processing card.");
       setIsProcessing(false);
     } else {
       setTimeout(() => {
         onSuccess(paymentMethod.id);
         setIsProcessing(false);
-      }, 2000);
+      }, 1500);
     }
   };
 
   return (
-    <div className="bg-white rounded-[3rem] p-10 md:p-14 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-300 border border-slate-100 max-w-lg w-full">
-      <div className="flex justify-between items-start mb-12">
+    <div className="bg-white rounded-[3.5rem] p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-slate-100 max-w-lg w-full animate-in zoom-in-95 duration-300 relative z-[1000] ring-1 ring-slate-100 pointer-events-auto">
+      <div className="flex justify-between items-start mb-8">
         <div>
-          <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Checkout <span className="text-[#20B2AA]">Secure</span></h3>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
-            <Lock size={12} /> Encrypted Payment Infrastructure
-          </p>
+          <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Secure <span className="text-[#20B2AA]">Payment</span></h3>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2 italic">MDC Real-Time Gateway</p>
         </div>
-        <div className="text-right">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount Due</p>
-          <p className="text-3xl font-black text-slate-900 tracking-tighter">£{amount.toFixed(2)}</p>
-        </div>
+        <button onClick={onCancel} className="p-3 bg-slate-50 rounded-2xl text-slate-300 hover:text-rose-500 transition-all active:scale-90">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="mb-10 p-6 bg-slate-900 rounded-[2rem] text-white flex justify-between items-end shadow-xl">
+         <div>
+            <p className="text-[9px] font-black text-teal-400 uppercase tracking-widest mb-1">Total a cobrar</p>
+            <p className="text-4xl font-black tracking-tighter">£{amount.toFixed(2)}</p>
+         </div>
+         <div className="text-right">
+            <Lock size={20} className="text-[#C6FF00] inline-block mb-2"/>
+         </div>
       </div>
 
       {error && (
-        <div className="mb-8 p-5 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-[11px] font-bold flex items-center gap-3 animate-shake">
-          <AlertCircle size={18} /> {error}
+        <div className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-bold flex items-center gap-3 border border-rose-100">
+          <AlertCircle size={16} /> {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-3">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Cardholder Name</label>
-          <input 
-            type="text" 
-            required 
-            defaultValue={clientName}
-            className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-3xl text-sm font-bold focus:ring-4 focus:ring-teal-50 outline-none transition-all"
-          />
+           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Detalles de Tarjeta</label>
+           <div className="p-6 bg-slate-50 border border-slate-200 rounded-[2rem] shadow-inner focus-within:ring-4 focus-within:ring-teal-50 transition-all">
+             <CardElement 
+               options={{
+                 style: {
+                   base: {
+                     fontSize: '16px',
+                     color: '#0F172A',
+                     '::placeholder': { color: '#94a3b8' },
+                   },
+                 },
+               }}
+             />
+           </div>
         </div>
 
-        <div className="space-y-4">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Card Details</label>
-          <div className="p-8 bg-slate-50 border border-slate-200 rounded-[2.2rem] shadow-inner">
-            <CardElement 
-              options={{
-                style: {
-                  base: {
-                    fontSize: '16px',
-                    color: '#0F172A',
-                    fontFamily: 'Plus Jakarta Sans, sans-serif',
-                    '::placeholder': { color: '#94a3b8' },
-                  },
-                  invalid: { color: '#FF6B9D' },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="pt-6 flex flex-col gap-4">
-          <button 
-            type="submit"
-            disabled={isProcessing || !stripe}
-            className={`w-full py-7 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[12px] flex items-center justify-center gap-3 transition-all shadow-2xl ${
-              isProcessing ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-[#20B2AA] hover:-translate-y-1'
-            }`}
-          >
-            {isProcessing ? (
-              <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>Pay £{amount.toFixed(2)} Now</>
-            )}
-          </button>
-          <button 
-            type="button"
-            onClick={onCancel}
-            disabled={isProcessing}
-            className="w-full py-4 text-slate-400 hover:text-slate-900 font-black uppercase tracking-widest text-[10px] transition-colors"
-          >
-            Cancel Transaction
-          </button>
+        <button 
+          disabled={isProcessing || !stripe}
+          className="w-full bg-slate-900 text-white py-6 rounded-full font-black uppercase text-[12px] tracking-widest shadow-2xl hover:bg-[#20B2AA] transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3"
+        >
+          {isProcessing ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Procesando...
+            </>
+          ) : (
+            <>
+              <ShieldCheck size={18} /> Pagar £{amount.toFixed(2)}
+            </>
+          )}
+        </button>
+        <div className="flex justify-center gap-4 text-[9px] font-black text-slate-300 uppercase tracking-widest pt-2">
+           <span className="flex items-center gap-1"><Lock size={10}/> SSL 256-bit</span>
+           <span className="flex items-center gap-1"><ShieldCheck size={10}/> PCI Compliant</span>
         </div>
       </form>
-
-      <div className="mt-12 pt-8 border-t border-slate-100 flex items-center justify-center gap-8 opacity-40 grayscale group hover:grayscale-0 hover:opacity-100 transition-all">
-         <ShieldCheck size={18} />
-         <p className="text-[10px] font-black uppercase tracking-widest">PCI-DSS Compliant • SSL 256-bit</p>
-      </div>
     </div>
   );
 };
 
 const StripePayment: React.FC<StripePaymentProps> = (props) => {
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+
+  useEffect(() => {
+    const savedInt = localStorage.getItem('mdc_integrations');
+    if (savedInt) {
+      const config = JSON.parse(savedInt);
+      if (config.stripePublicKey) {
+        setStripePromise(loadStripe(config.stripePublicKey));
+      }
+    }
+  }, []);
+
+  if (!stripePromise) {
+    return (
+      <div className="bg-white p-10 rounded-[2rem] shadow-2xl border border-rose-100 text-center max-w-md pointer-events-auto">
+        <AlertCircle size={40} className="mx-auto text-rose-500 mb-4"/>
+        <h3 className="text-xl font-black text-slate-900 uppercase">Configuración Incompleta</h3>
+        <p className="text-sm text-slate-500 mt-2">Por favor, introduce tu <strong>Stripe Public Key</strong> en el menú de Ajustes para activar los pagos con tarjeta.</p>
+        <button onClick={props.onCancel} className="mt-6 text-xs font-black uppercase text-[#20B2AA] hover:underline">Volver</button>
+      </div>
+    );
+  }
+
   return (
     <Elements stripe={stripePromise}>
       <CheckoutForm {...props} />

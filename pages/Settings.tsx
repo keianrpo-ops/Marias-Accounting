@@ -23,10 +23,10 @@ const Settings: React.FC = () => {
   });
 
   const [integrations, setIntegrations] = useState({
-    stripePublicKey: "pk_test_51SptwuRsUd49nl4oskw5O7N2NZ77pRlrPwtt40kN2lxVgCjFHSLAza6LgnlAwKgKNOAfWffMSY8X4tLEeW09zZoc00OHtjV8Cl",
-    stripeSecretKey: "sk_test_51SptwuRsUd49nl4o1GlvhTQpPJThZF3TU7HY6aK6oQf9endTDraSyscfmsRc5C5Nf2UtkOy89T64pdvM1uVYw90q00VuVABAEW",
-    supabaseUrl: "https://bxtwdidjcmqtfbjybahl.supabase.co",
-    supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHdkaWRqY21xdGZianliYWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MTY1NDYsImV4cCI6MjA4NTE5MjU0Nn0.pE89hCphvUZPRRSWeL1t76KXp5m7LURGiL1rQUaaxw8"
+    stripePublicKey: "",
+    stripeSecretKey: "",
+    supabaseUrl: "",
+    supabaseKey: ""
   });
 
   useEffect(() => {
