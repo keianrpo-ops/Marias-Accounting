@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   UserPlus, Search, Phone, Mail, MapPin, X, ShoppingBag, 
   Plus, Trash2, Dog, User, Globe, Stethoscope, Activity, Heart, ShieldCheck,
-  FileText, ArrowRight, Calendar, Info, BadgeCheck, AlertTriangle
+  FileText, ArrowRight, Calendar, Info, BadgeCheck, AlertTriangle, Edit, Save
 } from 'lucide-react';
 import { Client, UserRole, PetDetails } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -18,12 +18,14 @@ const Clients: React.FC = () => {
   const [pendingRequests, setPendingRequests] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   // Form State
   const [clientType, setClientType] = useState<UserRole>(UserRole.CLIENT);
   const [baseData, setBaseData] = useState({
     name: '', email: '', phone: '', addressLine1: '', city: '', postcode: '',
-    businessName: '', businessType: 'Retail Store', emergencyContactName: '', emergencyContactPhone: ''
+    businessName: '', businessType: 'Retail Store', emergencyContactName: '', emergencyContactPhone: '',
+    vetInfo: ''
   });
 
   const [pets, setPets] = useState<PetDetails[]>([
@@ -60,28 +62,90 @@ const Clients: React.FC = () => {
     }
   };
 
-  const handleAddClient = (e: React.FormEvent) => {
-    e.preventDefault();
-    const client: Client = {
-      id: Math.random().toString(36).substr(2, 9),
-      status: 'approved',
-      invoicesSent: 0,
-      createdAt: new Date().toISOString(),
-      role: clientType,
-      ...baseData,
-      pets: clientType === UserRole.CLIENT ? pets : []
-    } as Client;
+  const handleDeleteClient = (id: string) => {
+    if (confirm('¿Estás seguro de que deseas eliminar este cliente permanentemente de la base de datos?')) {
+      const updated = clients.filter(c => c.id !== id);
+      setClients(updated);
+      localStorage.setItem('mdc_clients', JSON.stringify(updated));
+    }
+  };
 
-    const updated = [...clients, client];
-    setClients(updated);
-    localStorage.setItem('mdc_clients', JSON.stringify(updated));
+  const openEditModal = (client: Client) => {
+    setEditingClient(client);
+    setClientType(client.role);
+    setBaseData({
+      name: client.name || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      addressLine1: client.addressLine1 || '',
+      city: client.city || '',
+      postcode: client.postcode || '',
+      businessName: client.businessName || '',
+      businessType: client.businessType || 'Retail Store',
+      emergencyContactName: client.emergencyContactName || '',
+      emergencyContactPhone: client.emergencyContactPhone || '',
+      vetInfo: client.vetInfo || ''
+    });
+    setPets(client.pets.length > 0 ? client.pets : [{
+      id: Math.random().toString(36).substr(2, 9),
+      name: '', age: '', breed: '', gender: 'male',
+      isNeutered: false, isVaccinated: true, allergies: '',
+      behaviorWithDogs: '', medicalNotes: ''
+    }]);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingClient) {
+      // Update existing
+      const updatedClients = clients.map(c => 
+        c.id === editingClient.id 
+        ? { 
+            ...c, 
+            ...baseData, 
+            role: clientType, 
+            pets: clientType === UserRole.CLIENT ? pets : [] 
+          } as Client
+        : c
+      );
+      setClients(updatedClients);
+      localStorage.setItem('mdc_clients', JSON.stringify(updatedClients));
+    } else {
+      // Add new
+      const client: Client = {
+        id: Math.random().toString(36).substr(2, 9),
+        status: 'approved',
+        invoicesSent: 0,
+        createdAt: new Date().toISOString(),
+        role: clientType,
+        ...baseData,
+        pets: clientType === UserRole.CLIENT ? pets : []
+      } as Client;
+
+      const updated = [...clients, client];
+      setClients(updated);
+      localStorage.setItem('mdc_clients', JSON.stringify(updated));
+    }
+
     setIsModalOpen(false);
     resetForm();
   };
 
   const resetForm = () => {
-    setBaseData({ name: '', email: '', phone: '', addressLine1: '', city: '', postcode: '', businessName: '', businessType: 'Retail Store', emergencyContactName: '', emergencyContactPhone: '' });
-    setPets([{ id: Math.random().toString(36).substr(2, 9), name: '', age: '', breed: '', gender: 'male', isNeutered: false, isVaccinated: true, allergies: '', behaviorWithDogs: '', medicalNotes: '' }]);
+    setEditingClient(null);
+    setBaseData({ 
+      name: '', email: '', phone: '', addressLine1: '', city: '', postcode: '', 
+      businessName: '', businessType: 'Retail Store', emergencyContactName: '', 
+      emergencyContactPhone: '', vetInfo: '' 
+    });
+    setPets([{ 
+      id: Math.random().toString(36).substr(2, 9), 
+      name: '', age: '', breed: '', gender: 'male', 
+      isNeutered: false, isVaccinated: true, allergies: '', 
+      behaviorWithDogs: '', medicalNotes: '' 
+    }]);
   };
 
   const startSale = (client: Client) => {
@@ -112,7 +176,7 @@ const Clients: React.FC = () => {
                 {pendingRequests.length > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white">{pendingRequests.length}</span>}
               </button>
            </div>
-           <button onClick={() => setIsModalOpen(true)} className="bg-[#20B2AA] text-white px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3 hover:scale-105 transition-all">
+           <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-[#20B2AA] text-white px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3 hover:scale-105 transition-all">
              <UserPlus size={16} /> Register Client
            </button>
         </div>
@@ -131,12 +195,21 @@ const Clients: React.FC = () => {
                 <div className={`w-16 h-16 rounded-[1.8rem] flex items-center justify-center font-black text-2xl shadow-inner ${client.role === UserRole.DISTRIBUTOR ? 'bg-teal-50 text-[#20B2AA]' : 'bg-pink-50 text-[#FF6B9D]'}`}>
                   {client.name.charAt(0)}
                 </div>
-                {activeTab === 'approved' && (
-                  <button onClick={() => startSale(client)} className="p-4 bg-slate-900 text-[#C6FF00] rounded-2xl shadow-xl hover:scale-110 transition-transform group/sale relative">
-                    <ShoppingBag size={20} />
-                    <span className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover/sale:opacity-100 transition-opacity whitespace-nowrap">START SALE</span>
-                  </button>
-                )}
+                <div className="flex gap-2">
+                  {activeTab === 'approved' && (
+                    <>
+                      <button onClick={() => openEditModal(client)} className="p-3 bg-slate-50 text-slate-400 hover:text-[#20B2AA] hover:bg-teal-50 rounded-xl transition-all" title="Edit Client">
+                        <Edit size={18} />
+                      </button>
+                      <button onClick={() => handleDeleteClient(client.id)} className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all" title="Delete Client">
+                        <Trash2 size={18} />
+                      </button>
+                      <button onClick={() => startSale(client)} className="p-3 bg-slate-900 text-[#C6FF00] rounded-xl shadow-xl hover:scale-110 transition-transform group/sale relative">
+                        <ShoppingBag size={18} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <h4 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none truncate">{client.businessName || client.name}</h4>
@@ -163,19 +236,19 @@ const Clients: React.FC = () => {
         ))}
       </div>
 
-      {/* Manual Registration Modal */}
+      {/* Registration/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
            <div className="bg-white w-full max-w-4xl rounded-[4rem] p-12 shadow-3xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto no-scrollbar border border-white">
               <div className="flex justify-between items-start mb-10">
                  <div>
-                    <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">Manual <span className="text-[#20B2AA]">Registration</span></h3>
+                    <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">{editingClient ? 'Edit' : 'Manual'} <span className="text-[#20B2AA]">{editingClient ? 'Record' : 'Registration'}</span></h3>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 italic">Official Admin Dossier Creation v5.0</p>
                  </div>
                  <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
               </div>
 
-              <form onSubmit={handleAddClient} className="space-y-16">
+              <form onSubmit={handleSubmitClient} className="space-y-16">
                  {/* Role Switcher */}
                  <div className="bg-slate-50 p-3 rounded-full flex shadow-inner border border-slate-100 max-w-md mx-auto">
                     <button type="button" onClick={() => setClientType(UserRole.DISTRIBUTOR)} className={`flex-1 py-4 rounded-full text-[12px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${clientType === UserRole.DISTRIBUTOR ? 'bg-slate-900 text-white shadow-2xl' : 'text-slate-400'}`}>
@@ -227,22 +300,14 @@ const Clients: React.FC = () => {
                                 </div>
                               </div>
                            </div>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-slate-200">
-                              <div className="space-y-4">
-                                 <Checkbox label="Vaccinations Verified" checked={pet.isVaccinated} onChange={(v: boolean) => setPets(pets.map(p => p.id === pet.id ? {...p, isVaccinated: v} : p))} />
-                                 <Checkbox label="Spayed / Neutered" checked={pet.isNeutered} onChange={(v: boolean) => setPets(pets.map(p => p.id === pet.id ? {...p, isNeutered: v} : p))} />
-                              </div>
-                              <select className="w-full px-8 py-5 bg-white rounded-[2rem] border border-slate-200 font-bold outline-none" value={pet.behaviorWithDogs} onChange={e => setPets(pets.map(p => p.id === pet.id ? {...p, behaviorWithDogs: e.target.value} : p))}>
-                                 <option value="">Behavior...</option>
-                                 <option>Friendly</option><option>Selective</option><option>Shy</option>
-                              </select>
-                           </div>
                         </div>
                       ))}
                    </div>
                  )}
 
-                 <button className="w-full bg-slate-900 text-white py-7 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[12px] shadow-3xl hover:bg-[#20B2AA] transition-all">Submit Approved Record</button>
+                 <button className="w-full bg-slate-900 text-white py-7 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[12px] shadow-3xl hover:bg-[#20B2AA] transition-all flex items-center justify-center gap-4">
+                    <Save size={20} /> {editingClient ? 'Update Approved Record' : 'Submit Approved Record'}
+                 </button>
               </form>
            </div>
         </div>
@@ -306,12 +371,6 @@ const Clients: React.FC = () => {
                                <p className="text-[9px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><Activity size={12}/> Behavior</p>
                                <p className="text-xs font-bold text-slate-600">"{pet.behaviorWithDogs || 'No notes'}"</p>
                             </div>
-                            {pet.allergies && (
-                              <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
-                                 <p className="text-[9px] font-black text-rose-400 uppercase mb-2 flex items-center gap-2"><Stethoscope size={12}/> Allergy Alert</p>
-                                 <p className="text-xs font-black text-rose-600">{pet.allergies}</p>
-                              </div>
-                            )}
                          </div>
                        )) : (
                          <div className="col-span-2 py-20 bg-slate-50 rounded-[3rem] text-center border-2 border-dashed border-slate-200">
@@ -341,13 +400,6 @@ const InputField = ({ label, value, onChange, type = "text" }: { label: string, 
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{label}</label>
     <input required type={type} className="w-full px-6 py-5 bg-slate-50 rounded-[2rem] border-none font-bold outline-none focus:bg-white focus:ring-4 focus:ring-teal-50 transition-all shadow-inner" value={value} onChange={e => onChange(e.target.value)} />
   </div>
-);
-
-const Checkbox = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (v: boolean) => void }) => (
-  <label className="flex items-center gap-4 cursor-pointer group">
-     <input type="checkbox" className="w-6 h-6 rounded-lg accent-[#20B2AA]" checked={checked} onChange={e => onChange(e.target.checked)} />
-     <span className="text-[12px] font-black uppercase text-slate-700">{label}</span>
-  </label>
 );
 
 const InfoItem = ({ label, value, icon: Icon }: any) => (
