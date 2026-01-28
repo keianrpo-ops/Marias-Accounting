@@ -35,7 +35,12 @@
         
         @media print { 
             .no-print { display: none !important; }
-            body { background-color: white !important; }
+            body { 
+               background-color: white !important; 
+               padding: 0 !important;
+               margin: 0 !important;
+            }
+            main { padding: 0 !important; }
         }
         
         ::-webkit-scrollbar { width: 6px; }

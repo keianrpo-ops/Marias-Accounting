@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, ArrowLeft, CheckCircle, Search, AlertCircle, ShoppingBag, Zap, CreditCard, X, Dog, Sparkles, ShoppingCart, Activity } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, CheckCircle, Search, AlertCircle, ShoppingBag, Zap, CreditCard, X, Dog, Sparkles, ShoppingCart, Activity, Printer, Landmark } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { InvoiceItem, InvoiceStatus, Invoice, Client, UserRole } from '../types';
 import { SERVICES, PRODUCTS, PRICING_TIERS } from '../constants';
@@ -19,6 +19,7 @@ const InvoiceBuilder: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [quickTab, setQuickTab] = useState<'snacks' | 'services'>('services');
+  const [businessSettings, setBusinessSettings] = useState<any>(null);
 
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: '1', description: '', quantity: 1, unitPrice: 0, total: 0 }
@@ -45,9 +46,10 @@ const InvoiceBuilder: React.FC = () => {
 
   useEffect(() => {
     const savedClients = JSON.parse(localStorage.getItem('mdc_clients') || '[]');
+    const settings = JSON.parse(localStorage.getItem('mdc_business_settings') || '{}');
     setAvailableClients(savedClients);
+    setBusinessSettings(settings);
     
-    // Check if client data was passed via navigation state
     if (location.state?.client) {
       const client = location.state.client as Client;
       selectClient(client);
@@ -169,6 +171,7 @@ const InvoiceBuilder: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-20">
+      {/* HEADER NO-PRINT */}
       <div className="flex justify-between items-center no-print px-4">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/invoices')} className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-[#20B2AA] transition-all hover:shadow-md">
@@ -302,9 +305,6 @@ const InvoiceBuilder: React.FC = () => {
                      ))
                    )}
                 </div>
-                <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Click to add directly to invoice</p>
-                </div>
              </div>
 
              {/* TOTALS SUMMARY */}
@@ -332,7 +332,7 @@ const InvoiceBuilder: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="mx-auto w-full max-w-[800px] bg-white shadow-2xl rounded-[3rem] p-20 animate-in zoom-in-95 duration-500 text-center">
+        <div className="no-print mx-auto w-full max-w-[800px] bg-white shadow-2xl rounded-[3rem] p-20 animate-in zoom-in-95 duration-500 text-center">
            <div className="flex flex-col items-center justify-center space-y-6">
               <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shadow-lg">
                  <CheckCircle size={40} />
@@ -342,12 +342,126 @@ const InvoiceBuilder: React.FC = () => {
                 <p className="text-slate-500 font-bold italic text-lg mt-4">Invoice saved to master audit records successfully.</p>
               </div>
               <div className="pt-10 flex gap-4">
-                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl">Print Invoice</button>
+                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center gap-2">
+                   <Printer size={16}/> Print Invoice
+                 </button>
                  <button onClick={() => setIsViewMode(false)} className="bg-white border border-slate-200 text-slate-900 px-10 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-md">Next Transaction</button>
               </div>
            </div>
         </div>
       )}
+
+      {/* PRINTABLE INVOICE - ONLY VISIBLE DURING PRINT */}
+      <div className="hidden print:block bg-white p-12 text-slate-900 font-sans min-h-screen">
+         <div className="flex justify-between items-start mb-16">
+            <div className="flex items-center gap-4">
+               <div className="w-16 h-16 bg-[#20B2AA] rounded-2xl flex items-center justify-center text-white">
+                  <Dog size={32} />
+               </div>
+               <div>
+                  <h1 className="text-3xl font-black tracking-tighter uppercase leading-none">MARIA'S DOG CORNER</h1>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Professional Pet Care & Gourmet Snacks</p>
+               </div>
+            </div>
+            <div className="text-right">
+               <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">INVOICE</h2>
+               <p className="text-[12px] font-black text-[#20B2AA] mt-2">#{clientInfo.invoiceNumber}</p>
+            </div>
+         </div>
+
+         <div className="grid grid-cols-2 gap-20 mb-16 pb-12 border-b-2 border-slate-50">
+            <div className="space-y-4">
+               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">FROM</h4>
+               <p className="text-sm font-black text-slate-900 uppercase">Maria's Dog Corner Ltd</p>
+               <p className="text-xs text-slate-500 leading-relaxed">
+                  {businessSettings?.address || '87 Portview, Avonmouth, Bristol, BS11 9JE'}<br/>
+                  Phone: {businessSettings?.phone || '07594 562 00'}<br/>
+                  Email: {businessSettings?.email || 'info@mariasdogcorner.co.uk'}
+               </p>
+            </div>
+            <div className="space-y-4">
+               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">BILL TO</h4>
+               <p className="text-sm font-black text-slate-900 uppercase">{clientInfo.name}</p>
+               <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">
+                  {clientInfo.address}<br/>
+                  {clientInfo.cityPostcode}<br/>
+                  {clientInfo.email}
+               </p>
+            </div>
+         </div>
+
+         <div className="grid grid-cols-3 gap-8 mb-16">
+            <div><p className="text-[10px] font-black text-slate-400 uppercase">DATE OF ISSUE</p><p className="text-sm font-bold">{clientInfo.date}</p></div>
+            <div><p className="text-[10px] font-black text-slate-400 uppercase">SERVICE DATE</p><p className="text-sm font-bold">{clientInfo.serviceDate}</p></div>
+            <div><p className="text-[10px] font-black text-slate-400 uppercase">DUE DATE</p><p className="text-sm font-bold">{clientInfo.dueDate}</p></div>
+         </div>
+
+         <table className="w-full mb-20">
+            <thead>
+               <tr className="bg-slate-50 border-y-2 border-slate-100">
+                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 w-1/2">Description</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Qty</th>
+                  <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Unit Price</th>
+                  <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Total</th>
+               </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+               {items.map((item, idx) => (
+                 <tr key={idx}>
+                    <td className="px-6 py-5 text-sm font-bold uppercase text-slate-900">{item.description}</td>
+                    <td className="px-6 py-5 text-center text-sm font-bold">{item.quantity}</td>
+                    <td className="px-6 py-5 text-right text-sm font-bold">£{item.unitPrice.toFixed(2)}</td>
+                    <td className="px-6 py-5 text-right text-sm font-black text-slate-900">£{item.total.toFixed(2)}</td>
+                 </tr>
+               ))}
+            </tbody>
+         </table>
+
+         <div className="flex justify-end mb-20">
+            <div className="w-80 space-y-4 border-t-2 border-slate-900 pt-8">
+               <div className="flex justify-between items-center text-sm font-bold text-slate-400">
+                  <span className="uppercase tracking-widest">Subtotal</span>
+                  <span>£{totals.subtotal.toFixed(2)}</span>
+               </div>
+               {totals.discount > 0 && (
+                 <div className="flex justify-between items-center text-sm font-bold text-[#20B2AA]">
+                    <span className="uppercase tracking-widest">Partner Discount</span>
+                    <span>-£{totals.discount.toFixed(2)}</span>
+                 </div>
+               )}
+               <div className="flex justify-between items-center pt-4 border-t border-slate-50">
+                  <span className="text-lg font-black uppercase tracking-tighter">Grand Total</span>
+                  <span className="text-3xl font-black text-slate-900">£{totals.total.toFixed(2)}</span>
+               </div>
+            </div>
+         </div>
+
+         <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-3 mb-6 flex items-center gap-3">
+               {/* Added missing Landmark icon import from lucide-react to fix error on line 441 */}
+               <Landmark size={14} className="text-[#20B2AA]"/> PAYMENT INFORMATION (BACS ONLY)
+            </h4>
+            <div className="grid grid-cols-2 gap-8 text-[11px] font-bold text-slate-900">
+               <div>
+                  <p className="text-slate-400 font-black mb-1 uppercase tracking-tighter text-[8px]">Account Name</p>
+                  <p>{businessSettings?.accountName || "MARIA'S DOG CORNER"}</p>
+               </div>
+               <div>
+                  <p className="text-slate-400 font-black mb-1 uppercase tracking-tighter text-[8px]">Bank</p>
+                  <p>{businessSettings?.bankName || "Monzo Bank Business UK"}</p>
+               </div>
+               <div>
+                  <p className="text-slate-400 font-black mb-1 uppercase tracking-tighter text-[8px]">Sort Code</p>
+                  <p>{businessSettings?.sortCode || "04-03-33"}</p>
+               </div>
+               <div>
+                  <p className="text-slate-400 font-black mb-1 uppercase tracking-tighter text-[8px]">Account Number</p>
+                  <p>{businessSettings?.accountNumber || "30716413"}</p>
+               </div>
+            </div>
+            <p className="mt-8 pt-8 border-t border-slate-200 text-center text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Please use invoice number as payment reference.</p>
+         </div>
+      </div>
 
       {showStripeModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-6">
