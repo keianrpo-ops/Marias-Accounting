@@ -24,23 +24,20 @@
             color: var(--text-main);
             font-size: 14px;
         }
-        .refined-card {
-            background: #FFFFFF;
-            border: 1px solid var(--card-border);
-            border-radius: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-            transition: all 0.3s ease;
-        }
         h1, h2, h3, .font-heading { font-family: 'Outfit', sans-serif; }
         
         @media print { 
             .no-print { display: none !important; }
-            body { 
+            body, html { 
                background-color: white !important; 
-               padding: 0 !important;
                margin: 0 !important;
+               padding: 0 !important;
             }
-            main { padding: 0 !important; }
+            #root { padding: 0 !important; }
+            .print-only { 
+                display: block !important; 
+                width: 100%;
+            }
         }
         
         ::-webkit-scrollbar { width: 6px; }
@@ -55,8 +52,8 @@
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "recharts": "https://esm.sh/recharts@^3.7.0",
-    "@stripe/stripe-js": "https://esm.sh/@stripe/stripe-js@^8.6.4",
     "@stripe/react-stripe-js": "https://esm.sh/@stripe/react-stripe-js@^5.5.0",
+    "@stripe/stripe-js": "https://esm.sh/@stripe/stripe-js@^8.6.4",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }

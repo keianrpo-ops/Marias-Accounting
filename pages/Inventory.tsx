@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, Search, Package, AlertTriangle, Trash2, Edit, X, 
   ShoppingBag, Zap, Filter, Sparkles, ChevronRight, Info, 
-  Calendar, AlertCircle, Clock, Landmark, Banknote
+  Calendar, AlertCircle, Clock, Landmark, Banknote, ShieldCheck, History
 } from 'lucide-react';
 import { InventoryItem } from '../types';
 import { PRODUCTS, THEME } from '../constants';
@@ -25,7 +25,7 @@ const Inventory: React.FC = () => {
     category: 'Snack',
     batchNumber: `L-${Math.floor(1000 + Math.random() * 9000)}`,
     productionDate: new Date().toISOString().split('T')[0],
-    expiryDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    expiryDate: '' // Empezamos vacío para obligar a poner la real
   });
 
   useEffect(() => {
@@ -36,6 +36,7 @@ const Inventory: React.FC = () => {
   const saveToStorage = (updated: InventoryItem[]) => {
     setItems(updated);
     localStorage.setItem('mdc_inventory', JSON.stringify(updated));
+    window.dispatchEvent(new Event('storage'));
   };
 
   const inventorySummary = useMemo(() => {
@@ -46,6 +47,10 @@ const Inventory: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.expiryDate) {
+      alert("Por favor, introduce la fecha de caducidad real del lote.");
+      return;
+    }
     if (editingItem) {
       const updated = items.map(i => i.id === editingItem.id ? { ...i, ...formData } as InventoryItem : i);
       saveToStorage(updated);
@@ -80,7 +85,7 @@ const Inventory: React.FC = () => {
         category: 'Snack',
         batchNumber: `L-${Math.floor(1000 + Math.random() * 9000)}`,
         productionDate: new Date().toISOString().split('T')[0],
-        expiryDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        expiryDate: ''
       });
     }
     setIsModalOpen(true);
@@ -96,15 +101,18 @@ const Inventory: React.FC = () => {
       ...formData,
       name: prod.name,
       category: 'Snack',
-      unitCost: prod.basePrice * 0.40, // 40% del base price estimado como costo
+      unitCost: prod.basePrice * 0.40, 
       unit: 'Pack 100g',
-      reorderLevel: 15
+      reorderLevel: 15,
+      batchNumber: `L-${Math.floor(1000 + Math.random() * 9000)}`,
+      productionDate: new Date().toISOString().split('T')[0],
+      expiryDate: '' // Forzamos a que María elija la fecha
     });
     if (!isModalOpen) setIsModalOpen(true);
   };
 
   const getExpiryStatus = (dateStr?: string) => {
-    if (!dateStr) return { label: 'N/A', color: 'text-slate-400 bg-slate-50', icon: Info };
+    if (!dateStr) return { label: 'PENDIENTE', color: 'text-slate-400 bg-slate-50', icon: Info };
     const date = new Date(dateStr);
     const today = new Date();
     const diff = date.getTime() - today.getTime();
@@ -140,7 +148,6 @@ const Inventory: React.FC = () => {
         </div>
       </header>
 
-      {/* SECCIÓN DE PRODUCTOS PREDEFINIDOS - CARGA RÁPIDA */}
       <div className="space-y-6">
          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2 flex items-center gap-3">
            <Sparkles size={16} className="text-amber-400" /> Carga Rápida desde Catálogo Maestro
@@ -186,7 +193,7 @@ const Inventory: React.FC = () => {
               <tr className="bg-slate-50/50 text-slate-400 font-black uppercase tracking-widest text-[8px] border-b border-slate-100">
                 <th className="px-8 py-5">Producto / Lote</th>
                 <th className="px-8 py-5 text-center">Nivel Stock</th>
-                <th className="px-8 py-5 text-center">Caducidad</th>
+                <th className="px-8 py-5 text-center">Caducidad Real</th>
                 <th className="px-8 py-5 text-right">Valor (£)</th>
                 <th className="px-8 py-5 text-right">Acciones</th>
               </tr>
@@ -212,8 +219,11 @@ const Inventory: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-8 py-6 text-center">
-                         <div className={`px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border inline-flex items-center gap-2 shadow-sm ${status.color}`}>
-                           {status.label}
+                         <div className="flex flex-col items-center gap-1">
+                            <span className="text-[9px] font-black text-slate-900">{item.expiryDate}</span>
+                            <div className={`px-3 py-1 rounded-full text-[7px] font-black uppercase tracking-widest border inline-flex items-center gap-1 shadow-sm ${status.color}`}>
+                              {status.label}
+                            </div>
                          </div>
                       </td>
                       <td className="px-8 py-6 text-right font-black text-slate-900 text-sm">
@@ -240,7 +250,9 @@ const Inventory: React.FC = () => {
             <div className="flex justify-between items-start mb-10">
                <div>
                   <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">{editingItem ? 'EDITAR' : 'NUEVO'} <span className="text-[#20B2AA]">LOTE</span></h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2 italic">UK Food Safety Standards</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2 italic flex items-center gap-2">
+                    <ShieldCheck size={14} className="text-[#20B2AA]"/> UK Food Safety Compliance
+                  </p>
                </div>
                <button onClick={closeModal} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors"><X size={20}/></button>
             </div>
@@ -259,12 +271,12 @@ const Inventory: React.FC = () => {
 
                <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Nº Lote</label>
-                    <input required className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] text-sm font-black focus:ring-4 focus:ring-teal-50 outline-none shadow-inner" value={formData.batchNumber} onChange={e => setFormData({...formData, batchNumber: e.target.value})} />
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] px-2 flex items-center gap-2"><History size={12}/> Elaboración</label>
+                    <input required type="date" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] text-sm font-black focus:ring-4 focus:ring-teal-50 outline-none shadow-inner" value={formData.productionDate} onChange={e => setFormData({...formData, productionDate: e.target.value})} />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Caducidad</label>
-                    <input required type="date" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] text-sm font-black focus:ring-4 focus:ring-teal-50 outline-none shadow-inner" value={formData.expiryDate} onChange={e => setFormData({...formData, expiryDate: e.target.value})} />
+                    <label className="text-[9px] font-black text-[#FF6B9D] uppercase tracking-[0.2em] px-2 flex items-center gap-2"><AlertCircle size={12}/> Caducidad REAL</label>
+                    <input required type="date" className="w-full px-8 py-5 bg-[#FFF0F5] border border-pink-100 rounded-[2rem] text-sm font-black focus:ring-4 focus:ring-pink-200 outline-none shadow-inner" value={formData.expiryDate} onChange={e => setFormData({...formData, expiryDate: e.target.value})} />
                   </div>
                </div>
 
@@ -280,7 +292,7 @@ const Inventory: React.FC = () => {
                </div>
 
                <button className="w-full bg-slate-900 text-white py-6 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[11px] shadow-3xl hover:bg-[#20B2AA] transition-all flex items-center justify-center gap-4 group mt-6">
-                 <Package size={22}/> GUARDAR LOTE
+                 <Package size={22}/> GUARDAR REGISTRO LOTE
                </button>
             </form>
           </div>

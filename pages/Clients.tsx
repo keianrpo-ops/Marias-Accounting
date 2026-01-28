@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   UserPlus, Search, Phone, Mail, MapPin, X, ShoppingBag, 
   Plus, Trash2, Dog, User, Globe, Stethoscope, Activity, Heart, ShieldCheck,
-  FileText, Edit, Save, AlertCircle, CheckCircle
+  FileText, Edit, Save, AlertCircle, CheckCircle, Info
 } from 'lucide-react';
 import { Client, UserRole, PetDetails } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -274,11 +274,15 @@ const Clients: React.FC = () => {
                       </div>
                       {pets.map((pet) => (
                         <div key={pet.id} className="p-10 bg-slate-50/50 rounded-[3.5rem] border border-slate-200 space-y-10 relative">
-                           {pets.length > 1 && (
-                             <button type="button" onClick={() => setPets(pets.filter(p => p.id !== pet.id))} className="absolute top-8 right-8 text-rose-500">
-                               <Trash2 size={20}/>
-                             </button>
-                           )}
+                           <div className="absolute top-8 right-8 flex gap-4">
+                             {pets.length > 1 && (
+                               <button type="button" onClick={() => setPets(pets.filter(p => p.id !== pet.id))} className="p-3 bg-white text-rose-500 rounded-xl shadow-sm hover:bg-rose-50">
+                                 <Trash2 size={20}/>
+                               </button>
+                             )}
+                           </div>
+                           
+                           {/* Fila 1: Identificación Básica */}
                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                               <InputField label="Mascota" value={pet.name} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, name: v} : p))} />
                               <InputField label="Edad" value={pet.age} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, age: v} : p))} />
@@ -291,10 +295,75 @@ const Clients: React.FC = () => {
                                 </div>
                               </div>
                            </div>
+
+                           {/* Fila 2: Salud y Comportamiento */}
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-6 border-t border-slate-100/50">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2"><ShieldCheck size={12}/> Esterilizado</label>
+                                <div className="bg-white p-2 rounded-full flex shadow-sm border border-slate-100">
+                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isNeutered: true} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.isNeutered ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}>Sí</button>
+                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isNeutered: false} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${!pet.isNeutered ? 'bg-slate-200 text-slate-500' : 'text-slate-400'}`}>No</button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2"><CheckCircle size={12}/> Vacunas OK</label>
+                                <div className="bg-white p-2 rounded-full flex shadow-sm border border-slate-100">
+                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isVaccinated: true} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.isVaccinated ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}>Sí</button>
+                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isVaccinated: false} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${!pet.isVaccinated ? 'bg-rose-500 text-white' : 'text-slate-400'}`}>No</button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Comportamiento con perros</label>
+                                <select 
+                                  className="w-full px-6 py-4 bg-white rounded-full border border-slate-100 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-teal-50"
+                                  value={pet.behaviorWithDogs}
+                                  onChange={(e) => setPets(pets.map(p => p.id === pet.id ? {...p, behaviorWithDogs: e.target.value} : p))}
+                                >
+                                  <option value="">Seleccionar...</option>
+                                  <option value="Muy Amigable">Muy Amigable</option>
+                                  <option value="Tímido pero Dulce">Tímido pero Dulce</option>
+                                  <option value="Selectivo">Selectivo</option>
+                                  <option value="Energía Alta / Activo">Energía Alta / Activo</option>
+                                  <option value="Necesita Espacio">Necesita Espacio</option>
+                                </select>
+                              </div>
+                           </div>
+
+                           {/* Fila 3: Notas Médicas y Alergias */}
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-[#FF6B9D] uppercase tracking-widest ml-4 flex items-center gap-2"><AlertCircle size={12}/> Alergias Alimentarias</label>
+                                <textarea 
+                                  className="w-full px-8 py-5 bg-white rounded-[2rem] border border-slate-100 text-xs font-bold outline-none focus:ring-4 focus:ring-pink-50 shadow-inner resize-none h-28"
+                                  placeholder="Ej: Pollo, cereales, etc."
+                                  value={pet.allergies}
+                                  onChange={(e) => setPets(pets.map(p => p.id === pet.id ? {...p, allergies: e.target.value} : p))}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2"><Stethoscope size={12}/> Condiciones Médicas / Notas</label>
+                                <textarea 
+                                  className="w-full px-8 py-5 bg-white rounded-[2rem] border border-slate-100 text-xs font-bold outline-none focus:ring-4 focus:ring-teal-50 shadow-inner resize-none h-28"
+                                  placeholder="Cualquier medicación o antecedente..."
+                                  value={pet.medicalNotes}
+                                  onChange={(e) => setPets(pets.map(p => p.id === pet.id ? {...p, medicalNotes: e.target.value} : p))}
+                                />
+                              </div>
+                           </div>
                         </div>
                       ))}
                    </div>
                  )}
+
+                 {/* Datos de Emergencia y Veterinaria */}
+                 <div className="space-y-10">
+                    <SectionTitle icon={Stethoscope} title="Emergency & Vet Info" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                       <InputField label="Contacto de Emergencia" value={baseData.emergencyContactName} onChange={(v) => setBaseData({...baseData, emergencyContactName: v})} />
+                       <InputField label="Teléfono Emergencia" value={baseData.emergencyContactPhone} onChange={(v) => setBaseData({...baseData, emergencyContactPhone: v})} />
+                       <InputField label="Clínica Veterinaria" value={baseData.vetInfo} onChange={(v) => setBaseData({...baseData, vetInfo: v})} />
+                    </div>
+                 </div>
 
                  <button className="w-full bg-slate-900 text-white py-7 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[12px] shadow-3xl hover:bg-[#20B2AA] transition-all flex items-center justify-center gap-4">
                     <Save size={20} /> {editingClient ? 'Actualizar Registro' : 'Guardar Cliente'}
@@ -324,9 +393,18 @@ const Clients: React.FC = () => {
                  <div className="space-y-10 lg:border-r lg:border-slate-100 lg:pr-12">
                     <SectionTitle icon={Globe} title="Contact" dark />
                     <div className="space-y-6">
-                       <p className="text-sm font-bold text-slate-900 break-all">{selectedClient.email}</p>
-                       <p className="text-sm font-bold text-slate-900">{selectedClient.phone}</p>
-                       <p className="text-sm font-bold text-slate-900">{selectedClient.addressLine1}, {selectedClient.city}</p>
+                       <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email</p>
+                          <p className="text-sm font-bold text-slate-900 break-all">{selectedClient.email}</p>
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedClient.phone}</p>
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Address</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedClient.addressLine1}, {selectedClient.city}</p>
+                       </div>
                     </div>
                     <button onClick={() => { setSelectedClient(null); openEditModal(selectedClient); }} className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase text-[11px] tracking-widest shadow-2xl flex items-center justify-center gap-3">
                        <Edit size={20}/> Editar Dossier
@@ -337,11 +415,38 @@ const Clients: React.FC = () => {
                     <SectionTitle icon={Dog} title="Pets" dark />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        {selectedClient.pets?.map(pet => (
-                         <div key={pet.id} className="bg-slate-50 p-8 rounded-[3.5rem] border border-slate-100 space-y-4">
-                            <h5 className="text-2xl font-black text-slate-900 uppercase">{pet.name}</h5>
-                            <p className="text-xs font-bold text-slate-400 uppercase">{pet.breed} • {pet.age}</p>
+                         <div key={pet.id} className="bg-slate-50 p-8 rounded-[3.5rem] border border-slate-100 space-y-6">
+                            <div className="flex justify-between items-start">
+                               <h5 className="text-2xl font-black text-slate-900 uppercase">{pet.name}</h5>
+                               <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${pet.gender === 'female' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'}`}>
+                                 {pet.gender}
+                               </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                               <div className="bg-white p-3 rounded-2xl border border-slate-100 text-center">
+                                  <p className="text-[7px] font-black text-slate-400 uppercase">Breed</p>
+                                  <p className="text-[10px] font-bold text-slate-900 truncate">{pet.breed}</p>
+                               </div>
+                               <div className="bg-white p-3 rounded-2xl border border-slate-100 text-center">
+                                  <p className="text-[7px] font-black text-slate-400 uppercase">Age</p>
+                                  <p className="text-[10px] font-bold text-slate-900">{pet.age}</p>
+                               </div>
+                            </div>
+                            <div className="flex gap-2">
+                               {pet.isNeutered && <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase rounded-lg">Neutered</span>}
+                               {pet.isVaccinated && <span className="px-3 py-1 bg-teal-100 text-teal-600 text-[8px] font-black uppercase rounded-lg">Vaccinated</span>}
+                            </div>
+                            {pet.allergies && (
+                              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+                                <p className="text-[8px] font-black text-rose-600 uppercase mb-1">Alergias</p>
+                                <p className="text-[10px] font-medium text-slate-600">{pet.allergies}</p>
+                              </div>
+                            )}
                          </div>
                        ))}
+                       {(!selectedClient.pets || selectedClient.pets.length === 0) && (
+                         <p className="text-slate-400 italic text-sm">No pets registered in dossier.</p>
+                       )}
                     </div>
                  </div>
               </div>
@@ -362,7 +467,7 @@ const SectionTitle = ({ icon: Icon, title }: any) => (
 const InputField = ({ label, value, onChange, type = "text" }: { label: string, value: string, onChange: (v: string) => void, type?: string }) => (
   <div className="space-y-2 w-full">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{label}</label>
-    <input required type={type} className="w-full px-6 py-5 bg-slate-50 rounded-[2rem] border-none font-bold outline-none focus:bg-white focus:ring-4 focus:ring-teal-50 transition-all shadow-inner" value={value} onChange={e => onChange(e.target.value)} />
+    <input required type={type} className="w-full px-6 py-5 bg-slate-50 rounded-[2rem] border-none font-bold outline-none focus:bg-white focus:ring-4 focus:ring-teal-50 transition-all shadow-inner text-xs" value={value} onChange={e => onChange(e.target.value)} />
   </div>
 );
 
