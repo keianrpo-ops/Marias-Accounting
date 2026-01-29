@@ -13,12 +13,16 @@ import Inventory from './pages/Inventory';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Messages from './pages/Messages';
+import OrdersManager from './pages/OrdersManager';
 import DistributorPortal from './pages/DistributorPortal';
 import DistributorCatalog from './pages/DistributorCatalog';
 import DistributorLanding from './pages/DistributorLanding';
 import ClientPortal from './pages/ClientPortal';
 import { LanguageProvider } from './context/LanguageContext';
 import { UserRole } from './types';
+import OrderDetail from './pages/OrderDetail';
+
+
 
 const App: React.FC = () => {
   const [auth, setAuth] = useState<{ isAuthenticated: boolean; role: UserRole | null }>(() => {
@@ -56,6 +60,8 @@ const App: React.FC = () => {
                 {auth.role === UserRole.ADMIN ? (
                   <>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/orders" element={<OrdersManager />} />
+                    <Route path="/orders/:id" element={<OrderDetail />} />
                     <Route path="/invoices" element={<Invoices />} />
                     <Route path="/invoices/new" element={<InvoiceBuilder />} />
                     <Route path="/invoices/edit/:id" element={<InvoiceBuilder />} />

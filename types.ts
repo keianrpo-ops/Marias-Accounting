@@ -39,7 +39,7 @@ export interface PetDetails {
 
 export interface Client {
   id: string;
-  name: string; // Contact Person
+  name: string; 
   email: string;
   phone: string;
   addressLine1: string;
@@ -50,14 +50,10 @@ export interface Client {
   status: 'pending' | 'approved';
   invoicesSent: number;
   createdAt: string;
-  
-  // Distributor specific
   businessName?: string;
   vatNumber?: string;
   tier?: DistributorTier;
   businessType?: string;
-  
-  // Daycare specific
   pets: PetDetails[];
   emergencyContactName?: string;
   emergencyContactPhone?: string;
@@ -72,23 +68,29 @@ export interface InvoiceItem {
   total: number;
 }
 
-export interface Invoice {
+export interface Order {
   id: string;
-  invoiceNumber: string;
+  orderNumber: string;
   clientName: string;
   clientEmail: string;
+  items: InvoiceItem[];
+  total: number;
+  status: InvoiceStatus;
+  date: string;
+  isWholesale: boolean;
+  paymentId?: string;
+  shippingAddress?: string;
+}
+
+export interface Invoice extends Order {
+  invoiceNumber: string;
   clientPhone: string;
   clientAddress: string;
   clientCityPostcode: string;
-  date: string;
   serviceDate: string;
   dueDate: string;
-  items: InvoiceItem[];
   subtotal: number;
-  total: number;
-  status: InvoiceStatus;
   isVatInvoice: boolean;
-  isWholesale?: boolean;
   discountApplied?: number;
   distributorId?: string;
   paymentMethod?: string;

@@ -13,7 +13,8 @@ import {
   Package,
   ShoppingBag,
   MessageSquare,
-  Globe
+  Globe,
+  Truck
 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import { useLanguage } from '../context/LanguageContext';
@@ -31,6 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, role }) => {
 
   const adminMenu = [
     { name: t('dashboard'), icon: LayoutDashboard, path: '/' },
+    { name: 'PEDIDOS', icon: Truck, path: '/orders' },
     { name: t('sales'), icon: FileText, path: '/invoices' },
     { name: t('messages'), icon: MessageSquare, path: '/messages' },
     { name: t('expenses'), icon: Receipt, path: '/expenses' },
@@ -62,7 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, role }) => {
           </div>
         </div>
 
-        <nav className="flex-1 px-5 space-y-4 mt-12">
+        <nav className="flex-1 px-5 space-y-4 mt-12 overflow-y-auto no-scrollbar pb-10">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
