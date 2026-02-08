@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -18,11 +17,11 @@ import DistributorPortal from './pages/DistributorPortal';
 import DistributorCatalog from './pages/DistributorCatalog';
 import DistributorLanding from './pages/DistributorLanding';
 import ClientPortal from './pages/ClientPortal';
+import ClientCatalog from './pages/ClientCatalog'; // Catálogo de Cliente
+import ClientOrders from './pages/ClientOrders';   // Historial de Cliente (NUEVO)
 import { LanguageProvider } from './context/LanguageContext';
 import { UserRole } from './types';
 import OrderDetail from './pages/OrderDetail';
-
-
 
 const App: React.FC = () => {
   const [auth, setAuth] = useState<{ isAuthenticated: boolean; role: UserRole | null }>(() => {
@@ -81,7 +80,18 @@ const App: React.FC = () => {
                   </>
                 ) : (
                   <>
+                    {/* --- ZONA CLIENTE REGULAR --- */}
                     <Route path="/" element={<ClientPortal />} />
+                    
+                    {/* Catálogo y Compras */}
+                    <Route path="/catalog" element={<ClientCatalog />} /> 
+                    
+                    {/* Historial de Pedidos (NUEVO) */}
+                    <Route path="/orders" element={<ClientOrders />} />
+                    
+                    {/* Detalle de un Pedido (REUTILIZADO) */}
+                    <Route path="/orders/:id" element={<OrderDetail />} />
+
                     <Route path="/messages" element={<Messages />} />
                   </>
                 )}

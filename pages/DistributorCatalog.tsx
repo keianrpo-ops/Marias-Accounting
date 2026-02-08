@@ -35,7 +35,7 @@ const DistributorCatalog: React.FC = () => {
 
   const updateCart = (id: string, delta: number) => {
     setCart((prev) => {
-      const current = prev[id] || 0;
+      const current = Number(prev[id]) || 0;
       const newVal = Math.max(0, current + delta);
       setError(null);
       return { ...prev, [id]: newVal };
@@ -51,7 +51,7 @@ const DistributorCatalog: React.FC = () => {
       const q = Number(qty) || 0;
       if (prod) {
         totalUnits += q;
-        baseTotal += prod.basePrice * q;
+        baseTotal += (Number(prod.basePrice) || 0) * q;
       }
     });
 
@@ -63,7 +63,7 @@ const DistributorCatalog: React.FC = () => {
       }
     }
 
-    const finalTotal = baseTotal * (1 - activeTier.discount);
+    const finalTotal = baseTotal * (1 - (Number(activeTier.discount) || 0));
 
     return {
       totalUnits,
@@ -90,7 +90,7 @@ const DistributorCatalog: React.FC = () => {
           if (!p) throw new Error(`Producto no encontrado: ${id}`);
 
           const qty = Number(q) || 0;
-          const unitPrice = p.basePrice * (1 - cartStats.activeTier.discount);
+          const unitPrice = (Number(p.basePrice) || 0) * (1 - (Number(cartStats.activeTier.discount) || 0));
 
           return {
             id: p.id,
@@ -103,7 +103,7 @@ const DistributorCatalog: React.FC = () => {
 
       if (orderItems.length === 0) throw new Error('El carrito está vacío.');
 
-      // ✅ ID temporal SOLO para local/UI. Supabase genera UUID real al insertar.
+      // ✅ ID temporal SOLO para UI/local. Supabase genera UUID real al insertar.
       const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
       // ✅ ORDER (lo que consume Admin Orders + Distributor Portal)
@@ -116,7 +116,7 @@ const DistributorCatalog: React.FC = () => {
         status: InvoiceStatus.PAID,
         date: new Date().toISOString().split('T')[0],
         isWholesale: true,
-        items: orderItems,
+        items: orderItems as any,
         paymentId,
       };
 
@@ -133,8 +133,11 @@ const DistributorCatalog: React.FC = () => {
         isVatInvoice: false,
       };
 
-      // ✅ Guardar
+      // ✅ Guardar en DB
       const savedOrder = await db.orders.save(newOrder);
+      await db.invoices.save(newInvoice);
+
+      // ✅ Logs para verificar guardado/lectura
       console.log('[B2B SAVE] newOrder =>', newOrder);
       console.log('[B2B SAVE] savedOrder =>', savedOrder);
 
@@ -144,9 +147,6 @@ const DistributorCatalog: React.FC = () => {
 
       const dbAll = await db.orders.getAll();
       console.log('[B2B SAVE] db.orders.getAll() count =>', dbAll?.length, dbAll);
-
-
-      await db.invoices.save(newInvoice);
 
       const finalOrder = (savedOrder || newOrder) as any;
 
@@ -165,14 +165,15 @@ const DistributorCatalog: React.FC = () => {
       setShowPayment(false);
       setOrderSuccess(true);
 
-      // ✅ (Opcional) limpiar carrito para próxima compra
+      // ✅ limpiar carrito
       setCart({});
 
-      // ✅ Notificar a todas las vistas:
-      // - storage: compatibilidad cross-tab
-      // - mdc:datachanged: evento interno del app (si lo estás usando en DistributorPortal)
-      window.dispatchEvent(new Event('storage'));
+      // ✅ Notificar a todas las vistas
+      // 1) evento interno app
       window.dispatchEvent(new Event('mdc:datachanged'));
+
+      // 2) disparar evento "storage" real (solo se dispara si cambia localStorage)
+      localStorage.setItem('__mdc_ping', String(Date.now()));
     } catch (e: any) {
       console.error(e);
       setError(e?.message || 'Error al guardar el pedido en la base de datos.');
@@ -236,7 +237,7 @@ const DistributorCatalog: React.FC = () => {
         <div className="bg-white px-10 py-5 rounded-[2.5rem] border border-slate-100 flex items-center gap-4 shadow-sm">
           <Zap className="text-amber-500" size={24} />
           <p className="text-sm font-black text-slate-900">
-            {(cartStats.activeTier.discount * 100).toFixed(0)}% Ahorro B2B
+            {(Number(cartStats.activeTier.discount) * 100).toFixed(0)}% Ahorro B2B
           </p>
         </div>
       </header>
@@ -252,7 +253,7 @@ const DistributorCatalog: React.FC = () => {
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
           {PRODUCTS.map((prod) => {
             const qty = Number(cart[prod.id]) || 0;
-            const price = prod.basePrice * (1 - cartStats.activeTier.discount);
+            const price = (Number(prod.basePrice) || 0) * (1 - (Number(cartStats.activeTier.discount) || 0));
 
             return (
               <div
@@ -311,7 +312,7 @@ const DistributorCatalog: React.FC = () => {
                 .map(([id, q]) => {
                   const p = PRODUCTS.find((x) => x.id === id)!;
                   const qty = Number(q) || 0;
-                  const lineTotal = qty * p.basePrice * (1 - cartStats.activeTier.discount);
+                  const lineTotal = qty * (Number(p.basePrice) || 0) * (1 - (Number(cartStats.activeTier.discount) || 0));
 
                   return (
                     <div key={id} className="flex justify-between items-center text-sm">

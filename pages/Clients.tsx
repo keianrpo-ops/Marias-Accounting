@@ -1,79 +1,77 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UserPlus, Search, Phone, Mail, MapPin, X, ShoppingBag, 
-  Plus, Trash2, Dog, User, Globe, Stethoscope, Activity, Heart, ShieldCheck,
-  FileText, Edit, Save, AlertCircle, CheckCircle, Info
+  Trash2, Dog, User, Globe, Stethoscope, ShieldCheck,
+  Edit, CheckCircle, Lock, Eye, EyeOff
 } from 'lucide-react';
 import { Client, UserRole, PetDetails } from '../types';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
+import { supabase } from '../services/supabase';
 
 const Clients: React.FC = () => {
-  const navigate = useNavigate();
-  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'approved' | 'pending'>('approved');
   const [search, setSearch] = useState('');
   const [clients, setClients] = useState<Client[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  
+  // Estado para visibilidad de contraseña
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form State
   const [clientType, setClientType] = useState<UserRole>(UserRole.CLIENT);
   const [baseData, setBaseData] = useState({
+    id: '', 
     name: '', email: '', phone: '', addressLine1: '', city: '', postcode: '',
     businessName: '', businessType: 'Retail Store', emergencyContactName: '', emergencyContactPhone: '',
-    vetInfo: ''
+    vetInfo: '', visible_password: '' 
   });
 
   const [pets, setPets] = useState<PetDetails[]>([]);
 
-  const defaultPet = (): PetDetails => ({
-    id: Math.random().toString(36).substr(2, 9),
-    name: '', age: '', breed: '', gender: 'male',
-    isNeutered: false, isVaccinated: true, allergies: '',
-    behaviorWithDogs: '', medicalNotes: ''
-  });
-
+  // Cargar datos al inicio
   useEffect(() => {
-    const savedClients = JSON.parse(localStorage.getItem('mdc_clients') || '[]');
-    const savedPending = JSON.parse(localStorage.getItem('mdc_pending_requests') || '[]');
-    setClients(savedClients);
-    setPendingRequests(savedPending);
+    fetchClients();
   }, []);
 
-  const handleApprove = (client: Client) => {
-    const approvedClient = { ...client, status: 'approved' as const };
-    const updatedClients = [...clients, approvedClient];
-    const updatedPending = pendingRequests.filter(c => c.id !== client.id);
-    setClients(updatedClients);
-    setPendingRequests(updatedPending);
-    localStorage.setItem('mdc_clients', JSON.stringify(updatedClients));
-    localStorage.setItem('mdc_pending_requests', JSON.stringify(updatedPending));
-  };
+  const fetchClients = async () => {
+    // 1. Intentar cargar de Supabase
+    if (supabase) {
+      const { data, error } = await supabase.from('clients').select('*');
+      
+      if (!error && data) {
+        // --- CORRECCIÓN: LIMPIEZA DE DATOS (Sanitization) ---
+        // Rellenamos los nulls con valores por defecto para evitar caídas
+        const sanitizedData: Client[] = data.map((item: any) => ({
+             ...item,
+             name: item.name || 'Sin Nombre',
+             email: item.email || '',
+             role: item.role || UserRole.CLIENT, // Si es null, lo tratamos como cliente
+             status: item.status || 'pending',
+             pets: item.pets || [], // Array vacío si es null
+             businessName: item.businessName || '',
+             visible_password: item.visible_password || ''
+        }));
 
-  const handleReject = (id: string) => {
-    if (confirm('¿Desea rechazar esta solicitud?')) {
-      const updatedPending = pendingRequests.filter(c => c.id !== id);
-      setPendingRequests(updatedPending);
-      localStorage.setItem('mdc_pending_requests', JSON.stringify(updatedPending));
+        const approved = sanitizedData.filter(c => c.status === 'approved');
+        const pending = sanitizedData.filter(c => c.status === 'pending');
+        
+        setClients(approved);
+        setPendingRequests(pending);
+        return; 
+      }
     }
+
+    // 2. Fallback a LocalStorage
+    const localClients = JSON.parse(localStorage.getItem('mdc_clients') || '[]');
+    const localPending = JSON.parse(localStorage.getItem('mdc_pending_requests') || '[]');
+    setClients(localClients);
+    setPendingRequests(localPending);
   };
 
-  const handleDeleteClient = (id: string) => {
-    if (confirm('¿Estás seguro de que deseas eliminar este cliente? Se borrarán todos sus datos de forma permanente.')) {
-      const updated = clients.filter(c => c.id !== id);
-      setClients(updated);
-      localStorage.setItem('mdc_clients', JSON.stringify(updated));
-    }
-  };
-
-  const openEditModal = (client: Client) => {
-    setEditingClient(client);
-    setClientType(client.role);
+  const handleEdit = (client: Client) => {
     setBaseData({
+      id: client.id,
       name: client.name || '',
       email: client.email || '',
       phone: client.phone || '',
@@ -84,371 +82,391 @@ const Clients: React.FC = () => {
       businessType: client.businessType || 'Retail Store',
       emergencyContactName: client.emergencyContactName || '',
       emergencyContactPhone: client.emergencyContactPhone || '',
-      vetInfo: client.vetInfo || ''
+      vetInfo: client.vetInfo || '',
+      visible_password: client.visible_password || '' 
     });
-    setPets(client.pets?.length > 0 ? client.pets : [defaultPet()]);
+    setClientType(client.role || UserRole.CLIENT);
+    setPets(client.pets || []); // Protección contra null
     setIsModalOpen(true);
+    setShowPassword(false);
   };
 
-  const handleSubmitClient = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (editingClient) {
-      const updatedClients = clients.map(c => 
-        c.id === editingClient.id 
-        ? { ...c, ...baseData, role: clientType, pets: clientType === UserRole.CLIENT ? pets : [] } as Client
-        : c
-      );
-      setClients(updatedClients);
-      localStorage.setItem('mdc_clients', JSON.stringify(updatedClients));
-    } else {
-      const newClient: Client = {
-        id: Math.random().toString(36).substr(2, 9),
-        status: 'approved',
-        invoicesSent: 0,
-        createdAt: new Date().toISOString(),
-        role: clientType,
-        ...baseData,
-        pets: clientType === UserRole.CLIENT ? pets : []
-      } as Client;
+  const handleAddNew = () => {
+    setBaseData({
+      id: '',
+      name: '', email: '', phone: '', addressLine1: '', city: '', postcode: '',
+      businessName: '', businessType: 'Retail Store', emergencyContactName: '', emergencyContactPhone: '',
+      vetInfo: '', visible_password: ''
+    });
+    setClientType(UserRole.CLIENT);
+    setPets([]);
+    setIsModalOpen(true);
+    setShowPassword(false);
+  };
 
-      const updated = [...clients, newClient];
-      setClients(updated);
-      localStorage.setItem('mdc_clients', JSON.stringify(updated));
+  const handleSaveClient = async () => {
+    const isEditing = !!baseData.id;
+    const newId = isEditing ? baseData.id : Math.random().toString(36).substr(2, 9);
+    
+    const clientPayload: Client = {
+      id: newId,
+      createdAt: new Date().toISOString(),
+      status: 'approved',
+      invoicesSent: 0,
+      role: clientType,
+      name: baseData.name || 'Nuevo Cliente', // Evitar guardar nombres vacíos
+      email: baseData.email,
+      phone: baseData.phone,
+      addressLine1: baseData.addressLine1,
+      city: baseData.city,
+      postcode: baseData.postcode,
+      businessName: clientType === UserRole.DISTRIBUTOR ? baseData.businessName : undefined,
+      businessType: clientType === UserRole.DISTRIBUTOR ? baseData.businessType : undefined,
+      emergencyContactName: baseData.emergencyContactName,
+      emergencyContactPhone: baseData.emergencyContactPhone,
+      vetInfo: baseData.vetInfo,
+      pets: pets || [],
+      visible_password: baseData.visible_password 
+    };
+
+    if (supabase) {
+      if (isEditing) {
+        await supabase.from('clients').update(clientPayload).eq('id', newId);
+      } else {
+        await supabase.from('clients').insert([clientPayload]);
+      }
+    }
+
+    if (isEditing) {
+       setClients(prev => prev.map(c => c.id === newId ? clientPayload : c));
+       // Actualizar vista detallada si está seleccionada
+       if (selectedClient?.id === newId) setSelectedClient(clientPayload);
+    } else {
+       setClients(prev => [...prev, clientPayload]);
     }
 
     setIsModalOpen(false);
-    resetForm();
+    fetchClients();
   };
 
-  const resetForm = () => {
-    setEditingClient(null);
-    setBaseData({ 
-      name: '', email: '', phone: '', addressLine1: '', city: '', postcode: '', 
-      businessName: '', businessType: 'Retail Store', emergencyContactName: '', 
-      emergencyContactPhone: '', vetInfo: '' 
-    });
-    setPets([defaultPet()]);
+  const handleDelete = async (id: string) => {
+    if(!window.confirm('Are you sure?')) return;
+    
+    if (supabase) {
+      await supabase.from('clients').delete().eq('id', id);
+    }
+    
+    setClients(clients.filter(c => c.id !== id));
+    setPendingRequests(pendingRequests.filter(c => c.id !== id));
+    setSelectedClient(null);
   };
 
-  const startSale = (client: Client) => {
-    navigate('/invoices/new', { state: { client } });
+  const approveRequest = async (request: Client) => {
+    const approvedClient: Client = { ...request, status: 'approved' };
+    
+    if (supabase) {
+      await supabase.from('clients').update({ status: 'approved' }).eq('id', request.id);
+    }
+
+    setClients([...clients, approvedClient]);
+    setPendingRequests(pendingRequests.filter(r => r.id !== request.id));
   };
 
-  const filteredClients = useMemo(() => {
-    const source = activeTab === 'approved' ? clients : pendingRequests;
-    return source.filter(c => 
-      c.name.toLowerCase().includes(search.toLowerCase()) || 
-      c.email.toLowerCase().includes(search.toLowerCase()) ||
-      c.businessName?.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [clients, pendingRequests, activeTab, search]);
+  // --- CORRECCIÓN: FILTRADO SEGURO ---
+  // Usamos (variable || '') antes de .toLowerCase() para que no rompa si es null
+  const filteredClients = clients.filter(c => 
+    (c.name || '').toLowerCase().includes(search.toLowerCase()) || 
+    (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
+    (c.businessName || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-      <header className="flex flex-col md:flex-row justify-between items-center gap-6">
+    <div className="p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500 font-sans">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">CRM <span className="text-[#20B2AA]">Audit</span></h2>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-2">Gestión de {clients.length} Aprobados & {pendingRequests.length} en Cola</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-2">
+            {activeTab === 'approved' ? 'Client Database' : 'New Applications'}
+          </h1>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">
+            {activeTab === 'approved' ? 'Manage Relationships & Data' : 'Review & Approve Access'}
+          </p>
         </div>
-        <div className="flex gap-4">
-           <div className="bg-white p-1.5 rounded-full border border-slate-200 flex shadow-sm">
-              <button onClick={() => setActiveTab('approved')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'approved' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>Approved</button>
-              <button onClick={() => setActiveTab('pending')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'pending' ? 'bg-[#FF6B9D] text-white shadow-lg' : 'text-slate-400'}`}>
-                Queue
-                {pendingRequests.length > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white">{pendingRequests.length}</span>}
+        
+        <div className="flex items-center gap-4">
+           <div className="bg-white p-2 rounded-full shadow-sm flex gap-2">
+              <button onClick={() => setActiveTab('approved')} className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'approved' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+                 Active Database
+              </button>
+              <button onClick={() => setActiveTab('pending')} className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'pending' ? 'bg-[#20B2AA] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+                 Requests
+                 {pendingRequests.length > 0 && <span className="bg-rose-500 text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full">{pendingRequests.length}</span>}
               </button>
            </div>
-           <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-[#20B2AA] text-white px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3 hover:scale-105 transition-all">
-             <UserPlus size={16} /> Register Client
-           </button>
+           {activeTab === 'approved' && (
+             <button onClick={handleAddNew} className="bg-slate-900 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:bg-[#20B2AA] hover:scale-110 transition-all">
+               <UserPlus size={20} />
+             </button>
+           )}
         </div>
-      </header>
-
-      <div className="bg-white p-3 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center px-8 focus-within:ring-4 focus-within:ring-teal-50 transition-all">
-        <Search className="text-slate-300" size={18} />
-        <input className="flex-1 p-4 bg-transparent outline-none text-xs font-bold uppercase tracking-widest" placeholder="Buscar por nombre, negocio o contenido..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredClients.map(client => (
-          <div key={client.id} className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden flex flex-col justify-between h-full">
-            <div>
-              <div className="flex items-center justify-between mb-8">
-                <div className={`w-16 h-16 rounded-[1.8rem] flex items-center justify-center font-black text-2xl shadow-inner ${client.role === UserRole.DISTRIBUTOR ? 'bg-teal-50 text-[#20B2AA]' : 'bg-pink-50 text-[#FF6B9D]'}`}>
-                  {client.name.charAt(0)}
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-200px)]">
+        
+        {/* Left List */}
+        <div className="lg:col-span-1 bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col">
+           <div className="p-6 border-b border-slate-50">
+             <div className="relative">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                <input 
+                  className="w-full bg-slate-50 py-4 pl-14 pr-6 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-slate-100 transition-all" 
+                  placeholder="Search database..." 
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+             </div>
+           </div>
+           
+           <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+              {(activeTab === 'approved' ? filteredClients : pendingRequests).map(client => (
+                <div 
+                  key={client.id} 
+                  onClick={() => setSelectedClient(client)}
+                  className={`p-5 rounded-[2rem] cursor-pointer transition-all border-2 group relative overflow-hidden ${selectedClient?.id === client.id ? 'border-slate-900 bg-slate-50' : 'border-transparent hover:bg-slate-50'}`}
+                >
+                   <div className="flex justify-between items-start mb-3 relative z-10">
+                      <div>
+                         {/* Fallback de nombre por seguridad */}
+                         <h3 className="font-black text-slate-900 uppercase tracking-tight">{client.businessName || client.name || 'Sin Nombre'}</h3>
+                         {client.businessName && <p className="text-xs font-bold text-slate-400">{client.name}</p>}
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${client.role === UserRole.DISTRIBUTOR ? 'bg-teal-100 text-teal-700' : 'bg-rose-100 text-rose-700'}`}>
+                        {client.role === UserRole.DISTRIBUTOR ? 'Wholesale' : 'Client'}
+                      </span>
+                   </div>
+                   <div className="flex items-center gap-4 text-xs font-bold text-slate-400 relative z-10">
+                      <span className="flex items-center gap-1"><Mail size={12}/> {(client.email || '').split('@')[0]}...</span>
+                      <span className="flex items-center gap-1"><MapPin size={12}/> {client.city || 'N/A'}</span>
+                   </div>
                 </div>
-                <div className="flex gap-2">
-                  {activeTab === 'approved' && (
-                    <>
-                      <button onClick={() => openEditModal(client)} className="p-3 bg-slate-50 text-slate-400 hover:text-[#20B2AA] hover:bg-teal-50 rounded-xl transition-all" title="Editar">
-                        <Edit size={18} />
-                      </button>
-                      <button onClick={() => handleDeleteClient(client.id)} className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all" title="Borrar">
-                        <Trash2 size={18} />
-                      </button>
-                      <button onClick={() => startSale(client)} className="p-3 bg-slate-900 text-[#C6FF00] rounded-xl shadow-xl hover:scale-110 transition-transform">
-                        <ShoppingBag size={18} />
-                      </button>
-                    </>
-                  )}
+              ))}
+              
+              {(activeTab === 'approved' ? filteredClients : pendingRequests).length === 0 && (
+                <div className="text-center py-20 opacity-30">
+                   <User size={48} className="mx-auto mb-4" />
+                   <p className="font-black uppercase tracking-widest text-xs">No records found</p>
                 </div>
-              </div>
+              )}
+           </div>
+        </div>
 
-              <h4 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none truncate">{client.businessName || client.name}</h4>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{client.role === UserRole.DISTRIBUTOR ? 'Wholesale Partner' : 'Daycare Owner'}</p>
+        {/* Right Details */}
+        <div className="lg:col-span-2">
+           {selectedClient ? (
+             <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 h-full overflow-hidden flex flex-col relative animate-in slide-in-from-right-8 duration-500">
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-slate-50 to-transparent z-0"/>
+                
+                <div className="p-10 relative z-10 overflow-y-auto custom-scrollbar">
+                   <div className="flex justify-between items-start mb-10">
+                      <div className="flex items-center gap-6">
+                         <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center text-white shadow-xl rotate-3 ${selectedClient.role === UserRole.DISTRIBUTOR ? 'bg-slate-900' : 'bg-[#FF6B9D]'}`}>
+                            {selectedClient.role === UserRole.DISTRIBUTOR ? <ShoppingBag size={32}/> : <Dog size={32}/>}
+                         </div>
+                         <div>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase mb-1">{selectedClient.businessName || selectedClient.name}</h2>
+                            <div className="flex items-center gap-3">
+                               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                 <Globe size={14}/> {selectedClient.city || 'No City'}, {selectedClient.postcode || ''}
+                               </p>
+                               <span className="w-1 h-1 rounded-full bg-slate-300"/>
+                               <p className="text-sm font-bold text-[#20B2AA] uppercase tracking-widest">Active Member</p>
+                            </div>
+                         </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                         {activeTab === 'pending' ? (
+                           <>
+                             <button onClick={() => handleDelete(selectedClient.id)} className="p-4 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
+                               <X size={16}/> Reject
+                             </button>
+                             <button onClick={() => approveRequest(selectedClient)} className="p-4 rounded-2xl bg-slate-900 text-white hover:bg-[#20B2AA] transition-all font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-xl">
+                               <CheckCircle size={16}/> Approve Access
+                             </button>
+                           </>
+                         ) : (
+                           <>
+                             <button onClick={() => handleDelete(selectedClient.id)} className="w-12 h-12 rounded-2xl border-2 border-slate-100 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:border-rose-100 transition-all">
+                                <Trash2 size={18}/>
+                             </button>
+                             <button onClick={() => handleEdit(selectedClient)} className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg hover:bg-[#20B2AA] transition-all">
+                                <Edit size={18}/>
+                             </button>
+                           </>
+                         )}
+                      </div>
+                   </div>
 
-              <div className="mt-8 space-y-3 opacity-60 group-hover:opacity-100 transition-opacity">
-                <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase"><Mail size={16} className="text-slate-300"/> {client.email}</div>
-                <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase"><Phone size={16} className="text-slate-300"/> {client.phone}</div>
-                <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase"><MapPin size={16} className="text-slate-300"/> {client.postcode}</div>
-              </div>
-            </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                      <div className="space-y-8">
+                         <SectionTitle icon={User} title="Contact Profile" />
+                         <div className="space-y-4">
+                            <InfoRow label="Full Name" value={selectedClient.name || '-'} />
+                            <InfoRow label="Email Address" value={selectedClient.email || '-'} />
+                            <InfoRow label="Phone" value={selectedClient.phone || '-'} />
+                            <InfoRow label="Address" value={`${selectedClient.addressLine1 || ''}, ${selectedClient.city || ''}`} />
+                         </div>
 
-            {activeTab === 'pending' ? (
-              <div className="flex gap-4 mt-10 pt-8 border-t border-slate-50">
-                <button onClick={() => handleApprove(client)} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#20B2AA] transition-all shadow-xl">Approve</button>
-                <button onClick={() => handleReject(client.id)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-500 transition-all">Reject</button>
-              </div>
-            ) : (
-              <button onClick={() => setSelectedClient(client)} className="w-full mt-10 pt-8 border-t border-slate-50 text-[10px] font-black text-[#20B2AA] uppercase tracking-widest hover:underline transition-all text-center flex items-center justify-center gap-2">
-                <FileText size={14}/> Open Full Dossier
-              </button>
-            )}
-          </div>
-        ))}
+                         {selectedClient.role === UserRole.DISTRIBUTOR && (
+                           <>
+                             <SectionTitle icon={ShoppingBag} title="Business Details" />
+                             <div className="space-y-4">
+                                <InfoRow label="Company Name" value={selectedClient.businessName || '-'} />
+                                <InfoRow label="VAT Number" value={selectedClient.vatNumber || 'Not Registered'} />
+                                <InfoRow label="Sector" value={selectedClient.businessType || 'Retail'} />
+                             </div>
+                           </>
+                         )}
+
+                         {/* SECCIÓN PASSWORD EDITABLE ESTILIZADA */}
+                         <SectionTitle icon={Lock} title="Security & Access" />
+                         <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center justify-between group hover:border-[#20B2AA]/30 transition-all">
+                            <div>
+                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Current Password</p>
+                               <div className="flex items-center gap-3">
+                                  <p className="font-mono text-slate-900 font-bold text-lg">
+                                     {selectedClient.visible_password || '••••••••'}
+                                  </p>
+                                  {!selectedClient.visible_password && <span className="text-[9px] text-rose-400 font-bold">(Not Saved)</span>}
+                               </div>
+                            </div>
+                            <div className="px-3 py-1 bg-white rounded-lg text-[9px] font-black text-slate-300 uppercase border border-slate-100 shadow-sm">
+                               Admin View
+                            </div>
+                         </div>
+                      </div>
+
+                      <div className="space-y-8">
+                         {/* Fallback de Role por si es null */}
+                         {(selectedClient.role || UserRole.CLIENT) === UserRole.CLIENT && (
+                           <>
+                              <SectionTitle icon={Dog} title="Pet Dossier" />
+                              <div className="space-y-4">
+                                 {/* CORRECCIÓN: ARRAY SEGURO PARA MASCOTAS */}
+                                 {(selectedClient.pets || []).map((pet, idx) => (
+                                   <div key={idx} className="bg-slate-50 p-6 rounded-[2rem] flex items-center gap-6">
+                                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm overflow-hidden">
+                                         {pet.photoUrl ? (
+                                            <img src={pet.photoUrl} className="w-full h-full object-cover" alt={pet.name}/>
+                                         ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-200"><Dog size={24}/></div>
+                                         )}
+                                      </div>
+                                      <div>
+                                         <h4 className="font-black text-slate-900 text-lg">{pet.name}</h4>
+                                         <p className="text-xs font-bold text-slate-400">{pet.breed} • {pet.age}</p>
+                                      </div>
+                                   </div>
+                                 ))}
+                                 {(!selectedClient.pets || selectedClient.pets.length === 0) && (
+                                   <p className="text-slate-400 italic text-sm">No pets registered in dossier.</p>
+                                 )}
+                              </div>
+
+                              <SectionTitle icon={Stethoscope} title="Medical / Emergency" />
+                              <div className="space-y-4">
+                                 <InfoRow label="Vet Practice" value={selectedClient.vetInfo || '-'} />
+                                 <InfoRow label="Emergency Contact" value={`${selectedClient.emergencyContactName || '-'} (${selectedClient.emergencyContactPhone || '-'})`} />
+                              </div>
+                           </>
+                         )}
+                      </div>
+                   </div>
+                </div>
+             </div>
+           ) : (
+             <div className="h-full bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300">
+                <ShieldCheck size={64} className="mb-6 opacity-50"/>
+                <p className="font-black uppercase tracking-widest text-sm">Select a file to view details</p>
+             </div>
+           )}
+        </div>
       </div>
 
+      {/* MODAL EDIT / ADD */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-           <div className="bg-white w-full max-w-4xl rounded-[4rem] p-12 shadow-3xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto no-scrollbar border border-white">
-              <div className="flex justify-between items-start mb-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+           <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                  <div>
-                    <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">{editingClient ? 'Edit' : 'Manual'} <span className="text-[#20B2AA]">{editingClient ? 'Record' : 'Registration'}</span></h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 italic">MDC Admin Control v6.0</p>
+                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{baseData.id ? 'Edit Profile' : 'New Entry'}</h3>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Modify database record</p>
                  </div>
-                 <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                 <button onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all"><X size={20}/></button>
               </div>
-
-              <form onSubmit={handleSubmitClient} className="space-y-16">
-                 <div className="bg-slate-50 p-3 rounded-full flex shadow-inner border border-slate-100 max-w-md mx-auto">
-                    <button type="button" onClick={() => setClientType(UserRole.DISTRIBUTOR)} className={`flex-1 py-4 rounded-full text-[12px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${clientType === UserRole.DISTRIBUTOR ? 'bg-slate-900 text-white shadow-2xl' : 'text-slate-400'}`}>
-                      <ShoppingBag size={18}/> Wholesale
-                    </button>
-                    <button type="button" onClick={() => setClientType(UserRole.CLIENT)} className={`flex-1 py-4 rounded-full text-[12px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${clientType === UserRole.CLIENT ? 'bg-[#FF6B9D] text-white shadow-2xl' : 'text-slate-400'}`}>
-                      <Heart size={18}/> Pet Owner
-                    </button>
+              
+              <div className="p-10 space-y-8">
+                 {/* Role Switcher */}
+                 <div className="flex bg-slate-100 p-2 rounded-[2rem]">
+                    <button onClick={() => setClientType(UserRole.CLIENT)} className={`flex-1 py-4 rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all ${clientType === UserRole.CLIENT ? 'bg-white shadow-lg text-slate-900' : 'text-slate-400'}`}>Private Client</button>
+                    <button onClick={() => setClientType(UserRole.DISTRIBUTOR)} className={`flex-1 py-4 rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all ${clientType === UserRole.DISTRIBUTOR ? 'bg-white shadow-lg text-slate-900' : 'text-slate-400'}`}>Distributor</button>
                  </div>
 
-                 <div className="space-y-10">
-                    <SectionTitle icon={User} title="Identity & Contacts" />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <InputField label="Nombre Completo" value={baseData.name} onChange={(v) => setBaseData({...baseData, name: v})} />
-                        <InputField label="Email" type="email" value={baseData.email} onChange={(v) => setBaseData({...baseData, email: v})} />
-                        <InputField label="Teléfono" value={baseData.phone} onChange={(v) => setBaseData({...baseData, phone: v})} />
+                 <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                       <InputField label="Full Name" value={baseData.name} onChange={v => setBaseData({...baseData, name: v})} />
+                       <InputField label="Email" value={baseData.email} onChange={v => setBaseData({...baseData, email: v})} type="email" />
                     </div>
+                    
+                    {/* SECCIÓN PASSWORD EDITABLE ESTILIZADA */}
+                    <div className="p-6 bg-teal-50/50 rounded-[2rem] border border-teal-100/50 space-y-4">
+                       <div className="flex items-center gap-3 text-teal-600 mb-2">
+                          <Lock size={16} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Access Credentials</span>
+                       </div>
+                       <div className="space-y-2 w-full">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Password</label>
+                          <div className="relative">
+                             <input 
+                               type={showPassword ? "text" : "password"}
+                               className="w-full px-6 py-5 bg-white rounded-[2rem] border-none font-bold outline-none focus:ring-4 focus:ring-teal-100 transition-all text-slate-800 shadow-sm"
+                               value={baseData.visible_password}
+                               onChange={e => setBaseData({...baseData, visible_password: e.target.value})}
+                               placeholder="Enter password..."
+                             />
+                             <button 
+                               type="button"
+                               onClick={() => setShowPassword(!showPassword)}
+                               className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-600 transition-colors"
+                             >
+                               {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                             </button>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                       <InputField label="Phone" value={baseData.phone} onChange={v => setBaseData({...baseData, phone: v})} />
+                       <InputField label="City" value={baseData.city} onChange={v => setBaseData({...baseData, city: v})} />
+                    </div>
+                    <InputField label="Address Line 1" value={baseData.addressLine1} onChange={v => setBaseData({...baseData, addressLine1: v})} />
+                    
                     {clientType === UserRole.DISTRIBUTOR && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <InputField label="Nombre del Negocio" value={baseData.businessName} onChange={(v) => setBaseData({...baseData, businessName: v})} />
-                        <InputField label="Tipo de Negocio" value={baseData.businessType} onChange={(v) => setBaseData({...baseData, businessType: v})} />
+                      <div className="space-y-6 pt-4 border-t border-slate-100">
+                         <h4 className="text-sm font-black text-slate-900 uppercase">Business Info</h4>
+                         <div className="grid grid-cols-2 gap-6">
+                            <InputField label="Business Name" value={baseData.businessName} onChange={v => setBaseData({...baseData, businessName: v})} />
+                            <InputField label="VAT Number" value={baseData.businessType} onChange={v => setBaseData({...baseData, businessType: v})} />
+                         </div>
                       </div>
                     )}
                  </div>
 
-                 <div className="space-y-10">
-                    <SectionTitle icon={Globe} title="Location Details" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="md:col-span-2"><InputField label="Dirección" value={baseData.addressLine1} onChange={(v) => setBaseData({...baseData, addressLine1: v})} /></div>
-                       <InputField label="Ciudad" value={baseData.city} onChange={(v) => setBaseData({...baseData, city: v})} />
-                       <InputField label="Postcode" value={baseData.postcode} onChange={(v) => setBaseData({...baseData, postcode: v})} />
-                    </div>
-                 </div>
-
-                 {clientType === UserRole.CLIENT && (
-                   <div className="space-y-12">
-                      <div className="flex justify-between items-center border-b border-slate-100 pb-6">
-                        <SectionTitle icon={Dog} title="Pet Dossier" />
-                        <button type="button" onClick={() => setPets([...pets, defaultPet()])} className="bg-[#FF6B9D] text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-xl flex items-center gap-2">
-                           <Plus size={18}/> Add Pet
-                        </button>
-                      </div>
-                      {pets.map((pet) => (
-                        <div key={pet.id} className="p-10 bg-slate-50/50 rounded-[3.5rem] border border-slate-200 space-y-10 relative">
-                           <div className="absolute top-8 right-8 flex gap-4">
-                             {pets.length > 1 && (
-                               <button type="button" onClick={() => setPets(pets.filter(p => p.id !== pet.id))} className="p-3 bg-white text-rose-500 rounded-xl shadow-sm hover:bg-rose-50">
-                                 <Trash2 size={20}/>
-                               </button>
-                             )}
-                           </div>
-                           
-                           {/* Fila 1: Identificación Básica */}
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                              <InputField label="Mascota" value={pet.name} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, name: v} : p))} />
-                              <InputField label="Edad" value={pet.age} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, age: v} : p))} />
-                              <InputField label="Raza" value={pet.breed} onChange={(v) => setPets(pets.map(p => p.id === pet.id ? {...p, breed: v} : p))} />
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Género</label>
-                                <div className="bg-white p-2 rounded-full flex shadow-sm border border-slate-100">
-                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, gender: 'male' as const} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.gender === 'male' ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>Male</button>
-                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, gender: 'female' as const} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.gender === 'female' ? 'bg-[#FF6B9D] text-white' : 'text-slate-400'}`}>Female</button>
-                                </div>
-                              </div>
-                           </div>
-
-                           {/* Fila 2: Salud y Comportamiento */}
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-6 border-t border-slate-100/50">
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2"><ShieldCheck size={12}/> Esterilizado</label>
-                                <div className="bg-white p-2 rounded-full flex shadow-sm border border-slate-100">
-                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isNeutered: true} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.isNeutered ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}>Sí</button>
-                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isNeutered: false} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${!pet.isNeutered ? 'bg-slate-200 text-slate-500' : 'text-slate-400'}`}>No</button>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2"><CheckCircle size={12}/> Vacunas OK</label>
-                                <div className="bg-white p-2 rounded-full flex shadow-sm border border-slate-100">
-                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isVaccinated: true} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${pet.isVaccinated ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}>Sí</button>
-                                   <button type="button" onClick={() => setPets(pets.map(p => p.id === pet.id ? {...p, isVaccinated: false} : p))} className={`flex-1 py-3 rounded-full text-[10px] font-black uppercase transition-all ${!pet.isVaccinated ? 'bg-rose-500 text-white' : 'text-slate-400'}`}>No</button>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Comportamiento con perros</label>
-                                <select 
-                                  className="w-full px-6 py-4 bg-white rounded-full border border-slate-100 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-teal-50"
-                                  value={pet.behaviorWithDogs}
-                                  onChange={(e) => setPets(pets.map(p => p.id === pet.id ? {...p, behaviorWithDogs: e.target.value} : p))}
-                                >
-                                  <option value="">Seleccionar...</option>
-                                  <option value="Muy Amigable">Muy Amigable</option>
-                                  <option value="Tímido pero Dulce">Tímido pero Dulce</option>
-                                  <option value="Selectivo">Selectivo</option>
-                                  <option value="Energía Alta / Activo">Energía Alta / Activo</option>
-                                  <option value="Necesita Espacio">Necesita Espacio</option>
-                                </select>
-                              </div>
-                           </div>
-
-                           {/* Fila 3: Notas Médicas y Alergias */}
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black text-[#FF6B9D] uppercase tracking-widest ml-4 flex items-center gap-2"><AlertCircle size={12}/> Alergias Alimentarias</label>
-                                <textarea 
-                                  className="w-full px-8 py-5 bg-white rounded-[2rem] border border-slate-100 text-xs font-bold outline-none focus:ring-4 focus:ring-pink-50 shadow-inner resize-none h-28"
-                                  placeholder="Ej: Pollo, cereales, etc."
-                                  value={pet.allergies}
-                                  onChange={(e) => setPets(pets.map(p => p.id === pet.id ? {...p, allergies: e.target.value} : p))}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2"><Stethoscope size={12}/> Condiciones Médicas / Notas</label>
-                                <textarea 
-                                  className="w-full px-8 py-5 bg-white rounded-[2rem] border border-slate-100 text-xs font-bold outline-none focus:ring-4 focus:ring-teal-50 shadow-inner resize-none h-28"
-                                  placeholder="Cualquier medicación o antecedente..."
-                                  value={pet.medicalNotes}
-                                  onChange={(e) => setPets(pets.map(p => p.id === pet.id ? {...p, medicalNotes: e.target.value} : p))}
-                                />
-                              </div>
-                           </div>
-                        </div>
-                      ))}
-                   </div>
-                 )}
-
-                 {/* Datos de Emergencia y Veterinaria */}
-                 <div className="space-y-10">
-                    <SectionTitle icon={Stethoscope} title="Emergency & Vet Info" />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                       <InputField label="Contacto de Emergencia" value={baseData.emergencyContactName} onChange={(v) => setBaseData({...baseData, emergencyContactName: v})} />
-                       <InputField label="Teléfono Emergencia" value={baseData.emergencyContactPhone} onChange={(v) => setBaseData({...baseData, emergencyContactPhone: v})} />
-                       <InputField label="Clínica Veterinaria" value={baseData.vetInfo} onChange={(v) => setBaseData({...baseData, vetInfo: v})} />
-                    </div>
-                 </div>
-
-                 <button className="w-full bg-slate-900 text-white py-7 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[12px] shadow-3xl hover:bg-[#20B2AA] transition-all flex items-center justify-center gap-4">
-                    <Save size={20} /> {editingClient ? 'Actualizar Registro' : 'Guardar Cliente'}
+                 <button onClick={handleSaveClient} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-[#20B2AA] transition-all shadow-xl">
+                   Save Record
                  </button>
-              </form>
-           </div>
-        </div>
-      )}
-
-      {selectedClient && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-xl">
-           <div className="bg-white w-full max-w-5xl rounded-[4rem] shadow-3xl overflow-hidden border border-white flex flex-col max-h-[90vh]">
-              <div className="bg-slate-900 p-12 flex justify-between items-center text-white shrink-0">
-                 <div className="flex items-center gap-8">
-                    <div className="w-24 h-24 bg-[#20B2AA] rounded-[2.5rem] flex items-center justify-center shadow-2xl">
-                       <User size={48} />
-                    </div>
-                    <div>
-                       <p className="text-[10px] font-black text-teal-400 uppercase tracking-[0.5em] mb-3">Master Dossier Record</p>
-                       <h3 className="text-5xl font-black tracking-tighter uppercase">{selectedClient.businessName || selectedClient.name}</h3>
-                    </div>
-                 </div>
-                 <button onClick={() => setSelectedClient(null)} className="p-4 bg-white/10 rounded-2xl hover:bg-white/20 transition-all"><X size={28}/></button>
-              </div>
-
-              <div className="p-12 overflow-y-auto no-scrollbar grid grid-cols-1 lg:grid-cols-3 gap-12">
-                 <div className="space-y-10 lg:border-r lg:border-slate-100 lg:pr-12">
-                    <SectionTitle icon={Globe} title="Contact" dark />
-                    <div className="space-y-6">
-                       <div className="space-y-1">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email</p>
-                          <p className="text-sm font-bold text-slate-900 break-all">{selectedClient.email}</p>
-                       </div>
-                       <div className="space-y-1">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
-                          <p className="text-sm font-bold text-slate-900">{selectedClient.phone}</p>
-                       </div>
-                       <div className="space-y-1">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Address</p>
-                          <p className="text-sm font-bold text-slate-900">{selectedClient.addressLine1}, {selectedClient.city}</p>
-                       </div>
-                    </div>
-                    <button onClick={() => { setSelectedClient(null); openEditModal(selectedClient); }} className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase text-[11px] tracking-widest shadow-2xl flex items-center justify-center gap-3">
-                       <Edit size={20}/> Editar Dossier
-                    </button>
-                 </div>
-
-                 <div className="lg:col-span-2 space-y-10">
-                    <SectionTitle icon={Dog} title="Pets" dark />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       {selectedClient.pets?.map(pet => (
-                         <div key={pet.id} className="bg-slate-50 p-8 rounded-[3.5rem] border border-slate-100 space-y-6">
-                            <div className="flex justify-between items-start">
-                               <h5 className="text-2xl font-black text-slate-900 uppercase">{pet.name}</h5>
-                               <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${pet.gender === 'female' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'}`}>
-                                 {pet.gender}
-                               </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                               <div className="bg-white p-3 rounded-2xl border border-slate-100 text-center">
-                                  <p className="text-[7px] font-black text-slate-400 uppercase">Breed</p>
-                                  <p className="text-[10px] font-bold text-slate-900 truncate">{pet.breed}</p>
-                               </div>
-                               <div className="bg-white p-3 rounded-2xl border border-slate-100 text-center">
-                                  <p className="text-[7px] font-black text-slate-400 uppercase">Age</p>
-                                  <p className="text-[10px] font-bold text-slate-900">{pet.age}</p>
-                               </div>
-                            </div>
-                            <div className="flex gap-2">
-                               {pet.isNeutered && <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase rounded-lg">Neutered</span>}
-                               {pet.isVaccinated && <span className="px-3 py-1 bg-teal-100 text-teal-600 text-[8px] font-black uppercase rounded-lg">Vaccinated</span>}
-                            </div>
-                            {pet.allergies && (
-                              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl">
-                                <p className="text-[8px] font-black text-rose-600 uppercase mb-1">Alergias</p>
-                                <p className="text-[10px] font-medium text-slate-600">{pet.allergies}</p>
-                              </div>
-                            )}
-                         </div>
-                       ))}
-                       {(!selectedClient.pets || selectedClient.pets.length === 0) && (
-                         <p className="text-slate-400 italic text-sm">No pets registered in dossier.</p>
-                       )}
-                    </div>
-                 </div>
               </div>
            </div>
         </div>
@@ -467,7 +485,14 @@ const SectionTitle = ({ icon: Icon, title }: any) => (
 const InputField = ({ label, value, onChange, type = "text" }: { label: string, value: string, onChange: (v: string) => void, type?: string }) => (
   <div className="space-y-2 w-full">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{label}</label>
-    <input required type={type} className="w-full px-6 py-5 bg-slate-50 rounded-[2rem] border-none font-bold outline-none focus:bg-white focus:ring-4 focus:ring-teal-50 transition-all shadow-inner text-xs" value={value} onChange={e => onChange(e.target.value)} />
+    <input required type={type} className="w-full px-6 py-5 bg-slate-50 rounded-[2rem] border-none font-bold outline-none focus:bg-white focus:ring-4 focus:ring-teal-50 transition-all shadow-inner" value={value || ''} onChange={e => onChange(e.target.value)} />
+  </div>
+);
+
+const InfoRow = ({ label, value }: { label: string, value: string }) => (
+  <div className="flex justify-between items-center border-b border-slate-50 pb-3">
+     <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{label}</span>
+     <span className="text-sm font-black text-slate-800 text-right">{value || '-'}</span>
   </div>
 );
 

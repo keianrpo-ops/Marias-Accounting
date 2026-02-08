@@ -1,3 +1,5 @@
+// 👇 AGREGA ESTO AL FINAL DE types.ts PARA QUE EL DASHBOARD NO FALLE
+export const VAT_THRESHOLD = 90000; // O el valor que tenías antes (ej. 85000)
 
 export enum InvoiceStatus {
   DRAFT = 'Draft',
@@ -35,12 +37,15 @@ export interface PetDetails {
   behaviorWithDogs: string;
   medicalNotes: string;
   lastGroomingDate?: string;
+  photoUrl?: string;
 }
 
 export interface Client {
   id: string;
   name: string; 
   email: string;
+    // 👇 AGREGA ESTA LÍNEA AQUÍ:
+  visible_password?: string;
   phone: string;
   addressLine1: string;
   addressLine2?: string;
@@ -58,6 +63,7 @@ export interface Client {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   vetInfo?: string;
+  visible_password?: string; // <--- CAMPO AGREGADO
 }
 
 export interface InvoiceItem {
@@ -111,12 +117,10 @@ export interface InventoryItem {
 
 export interface AppNotification {
   id: string;
-  title: string;
+  type: 'order' | 'system' | 'alert';
   message: string;
-  timestamp: string;
-  type: 'order' | 'payment' | 'stock' | 'system' | 'client';
   read: boolean;
-  targetRole: UserRole | 'all';
+  timestamp: string;
 }
+// ... (Mantén todas las interfaces que te pasé antes: Client, Order, etc.)
 
-export const VAT_THRESHOLD = 90000;
