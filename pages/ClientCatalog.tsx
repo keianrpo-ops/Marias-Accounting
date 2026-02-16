@@ -98,6 +98,8 @@ const ClientCatalog: React.FC = () => {
       // INSERT corregido para coincidir con tu esquema real (según la query que mostraste)
       const { error } = await supabase.from('orders').insert({
         order_number: orderNumber,
+        client_id: user.id,
+
         client_name: clientName,
         client_email: user.email ?? '',
         items: orderItems,          // jsonb

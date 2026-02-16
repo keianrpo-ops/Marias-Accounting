@@ -100,6 +100,7 @@ const normalizeOrderFromDb = (row: any) => {
 
   return {
     id: row.id,
+    clientId: row.client_id ?? row.clientId ?? null, // ✅ ADD (exists in your orders table)
     orderNumber: pick(row, 'order_number', 'orderNumber'),
     clientName: pick(row, 'client_name', 'clientName'),
     clientEmail: pick(row, 'client_email', 'clientEmail'),
@@ -119,7 +120,7 @@ const toDbOrderPayload = (order: any) => {
   const payload: any = {
     order_number: order.orderNumber,
     client_name: order.clientName,
-    client_email: order.clientEmail,
+    client_email: String(order.clientEmail || '').trim().toLowerCase(), // ✅ enforce lower
     items: normalizeItems(order.items),
     total: Number(order.total || 0),
     status: order.status,
@@ -128,6 +129,9 @@ const toDbOrderPayload = (order: any) => {
     payment_id: order.paymentId,
     shipping_address: order.shippingAddress,
   };
+
+  // ✅ Store client_id when present (your orders table has this column)
+  if (order.clientId && isUuid(order.clientId)) payload.client_id = order.clientId;
 
   // Only send UUID ids to Supabase
   if (order.id && isUuid(order.id)) payload.id = order.id;
@@ -167,7 +171,7 @@ const toDbInvoicePayload = (invoice: any) => {
     invoice_number: invoice.invoiceNumber,
     order_number: invoice.orderNumber,
     client_name: invoice.clientName,
-    client_email: invoice.clientEmail,
+    client_email: String(invoice.clientEmail || '').trim().toLowerCase(),
     client_phone: invoice.clientPhone,
     client_address: invoice.clientAddress,
     client_city_postcode: invoice.clientCityPostcode,
@@ -238,7 +242,8 @@ export const db = {
         ...order,
         items: normalizeItems(order?.items),
         total: Number(order?.total || 0),
-        clientEmail: String(order?.clientEmail || '').trim(), // ✅ enforce
+        clientEmail: String(order?.clientEmail || '').trim().toLowerCase(), // ✅ enforce
+        clientId: order?.clientId && isUuid(order.clientId) ? order.clientId : null, // ✅ keep
       };
 
       // ✅ If Supabase active: save FIRST, then store the returned normalized row locally
@@ -320,7 +325,7 @@ export const db = {
         items: normalizeItems(invoice?.items),
         subtotal: Number(invoice?.subtotal || 0),
         total: Number(invoice?.total || 0),
-        clientEmail: String(invoice?.clientEmail || '').trim(), // ✅ enforce
+        clientEmail: String(invoice?.clientEmail || '').trim().toLowerCase(), // ✅ enforce
       };
 
       if (supabase) {
@@ -397,7 +402,7 @@ export const db = {
     async updateStock(id: string, newQty: number) {
       const existing = readLS('mdc_inventory');
       const updated = (Array.isArray(existing) ? existing : []).map((i: any) =>
-        String(i?.id) === String(id) ? { ...i, quantity: newQty } : i
+        String(i?.id) === String(id) ? { ...i, quantity: newQty } : o
       );
       writeLS('mdc_inventory', updated);
       notifyDataChanged('inventory');
